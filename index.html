@@ -99,6 +99,7 @@ button{font:inherit;cursor:pointer}
 .run{background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:12px 26px;font-size:16px;font-weight:700}
 .run:disabled{opacity:.55;cursor:wait}
 #results{display:flex;flex-direction:column;gap:22px}
+#morePlans{display:flex;flex-direction:column;gap:22px}
 .res-head{display:flex;flex-direction:column;gap:6px}
 .res-head p{color:var(--muted);max-width:75ch}
 .stale{background:var(--mark);color:var(--mark-ink);padding:8px 12px;border-radius:6px;font-size:14px}
@@ -207,7 +208,7 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
 
   <div class="run-row">
     <button class="run" id="run" data-act="run">배정안 찾기</button>
-    <span class="muted" id="runNote">꼼꼼히 찾느라 최대 1분 걸립니다. 도중에 지금까지 찾은 안을 볼 수도 있습니다.</span>
+    <span class="muted" id="runNote">꼼꼼히 찾느라 최대 2분 걸립니다. 도중에 지금까지 찾은 안을 볼 수도 있습니다.</span>
   </div>
 
   <section id="results" aria-live="polite"></section>
@@ -417,6 +418,7 @@ document.addEventListener('click',e=>{
     case 'reset':S=defaultState();$('#results').innerHTML='';lastShown=false;break;
     case 'run':run();return;
     case 'stop':stopAsked=true;b.disabled=true;b.textContent='정리하는 중…';return;
+    case 'more':{const m=$('#morePlans');if(m){m.hidden=!m.hidden;b.textContent=m.hidden?b.textContent.replace('접기','더보기'):b.textContent.replace('더보기','접기');}return;}
     case 'hrReset':S.grades.forEach(g=>{delete g.hr});break;
     case 'semswitch':S.rules.sem=S.rules.sem==='avg'?'both':'avg';save();run();return;
     default:return;
@@ -845,7 +847,7 @@ function withX(P,xv){return Object.assign({},P,{chunks:P.chunks.map((ch,i)=>Obje
 
 /* 2단계: 배분 후보마다 누가 몇 학급을 맡을지 찾음.
    최대 1분 동안 조금씩 나눠 계산하고, 그 사이사이 화면에 진행 상황을 보여 줌 */
-const BUDGET=55000;
+const BUDGET=115000;                  // 최대 약 2분
 const tick=()=>new Promise(r=>setTimeout(r,0));
 let stopAsked=false;
 async function findPlans(P,rules,onProgress){
@@ -859,10 +861,10 @@ async function findPlans(P,rules,onProgress){
     onProgress&&onProgress({stage,frac,found:pool.size,...extra});
     await tick();lastYield=performance.now();
   };
-  // (가) 배분 후보를 짧게 시험해서 교사 배정이 실제로 되는 것만 남김 (최대 15초)
-  const feas=[],xs=xCandidates(P,5000);
+  // (가) 배분 후보를 짧게 시험해서 교사 배정이 실제로 되는 것만 남김 (최대 30초)
+  const feas=[],xs=xCandidates(P,8000);
   for(let j=0;j<xs.length;j++){
-    if(stopAsked||feas.length>=300||el()>15000)break;
+    if(stopAsked||feas.length>=500||el()>30000)break;
     const v=withX(P,xs[j]);
     for(let rs=0;rs<3;rs++){
       const m=new Map();
@@ -894,7 +896,7 @@ async function findPlans(P,rules,onProgress){
     round++;
   }
   const all=[...pool.values()].filter(p=>p.maxU<=Ls[Ls.length-1]).sort((a,b)=>a.score-b.score);
-  return {Lstar,auto,share,count:all.length,picked:pickDiverse(all,5),stopped:stopAsked};
+  return {Lstar,auto,share,count:all.length,picked:pickDiverse(all,10),stopped:stopAsked};
 }
 
 /* ---------- 결과 보여주기 ---------- */
@@ -960,10 +962,17 @@ function renderResults(P,r,sec){
     ?`준비 부담 한도는 자동으로 1인당 과목·학년 조합 ${L}개로 정했습니다. 찾은 안 중 가장 낮은 값이고, ${L+1}개인 안도 함께 비교했습니다.`
     :`준비 부담 한도는 1인당 과목·학년 조합 ${L}개입니다.`;
   const semText=S.rules.sem==='avg'?' 맡는 반은 1년 내내 같고, 시수는 두 학기 평균으로 맞췄습니다.':' 맡는 반은 1년 내내 같고, 1·2학기 시수가 같습니다.';
-  let h=`<div class="res-head"><div class="res-title"><h2>배정안 ${r.picked.length}가지</h2>${semNote()}</div>
+  const first=Math.min(5,r.picked.length),more=r.picked.length-first;
+  let h=`<div class="res-head"><div class="res-title"><h2>배정안 ${first}가지${more?` <span class="muted" style="font-size:14px;font-weight:500">더보기로 ${r.picked.length}가지까지</span>`:''}</h2>${semNote()}</div>
     <p>모든 안에서 전담 교사 시수는 담임 평균과 같거나 ${P.over}시간 이내로 많습니다(부장은 감경만큼 예외).${P.order?' 담임 시수는 6학년 ≤ 5학년 ≤ 4학년 ≤ 3학년 ≤ 1학년 = 2학년을 지킵니다.':''} ${prepText}${semText} 서로 다른 배정 ${r.count.toLocaleString()}가지를 찾았고(${sec.toFixed(1)}초${r.stopped?', 도중에 멈춤':''}), 그중 점수가 좋으면서 서로 많이 다른 안을 골랐습니다.</p></div>`;
   const labels=labelsFor(r.picked);
-  r.picked.forEach((p,idx)=>{h+=planHTML(P,p,idx,labels[idx])});
+  r.picked.slice(0,first).forEach((p,idx)=>{h+=planHTML(P,p,idx,labels[idx])});
+  // 6~10안은 '더보기'를 눌러야 보임
+  if(more){
+    h+=`<div class="btn-row"><button class="btn" data-act="more" id="moreBtn">더보기 (${first+1}~${r.picked.length}안)</button></div><div id="morePlans" hidden>`;
+    r.picked.slice(first).forEach((p,j)=>{h+=planHTML(P,p,first+j,labels[first+j])});
+    h+='</div>';
+  }
   box.innerHTML=h;
 }
 function planHTML(P,p,idx,labels){
