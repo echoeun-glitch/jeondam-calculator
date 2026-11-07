@@ -100,6 +100,9 @@ button{font:inherit;cursor:pointer}
 .run:disabled{opacity:.55;cursor:wait}
 #results{display:flex;flex-direction:column;gap:22px}
 #morePlans{display:flex;flex-direction:column;gap:22px}
+.more-row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:center}
+.btn.more{padding:10px 28px;font-size:15px;font-weight:600;border-color:var(--accent);color:var(--accent)}
+.btn.more:disabled{opacity:.5;cursor:default}
 .res-head{display:flex;flex-direction:column;gap:6px}
 .res-head p{color:var(--muted);max-width:75ch}
 .stale{background:var(--mark);color:var(--mark-ink);padding:8px 12px;border-radius:6px;font-size:14px}
@@ -534,6 +537,13 @@ const ORDER=[5,4,3,2,0,1];          // 0=1학년 … 5=6학년, 시수가 적어
 const POS=[4,5,3,2,1,0];            // 학년별로 위 순서에서 몇 번째인지
 // 평균 기준이면 두 학기를 합친 연 단위로, 아니면 학기마다 비교
 function hrRows(hr,P){return P.semAvg?[hr[0].map((v,g)=>v+hr[1][g])]:(P.split?[hr[0],hr[1]]:[hr[0]])}
+/* 희망 시수의 일부만 전담에게 준 것인지 (담임과 나눠 맡게 되어 감점).
+   단, '한 학기는 전부, 다른 학기는 1시간 적게'(예: 놀이 2·1시간)인 1/2 배분은 감점하지 않음 */
+function isPartial(ch,op){
+  if(!(op.sum>0&&op.sum<ch.hsum))return false;
+  const half=Math.abs(op.x[0]-op.x[1])===1&&Math.max(op.x[0],op.x[1])===Math.max(ch.h[0],ch.h[1]);
+  return !half;
+}
 /* 교사·담임 모두 1학기와 2학기 시수 차이는 이만큼까지 */
 const SEM_GAP=3;
 /* 같은 학년군(1·2, 3·4, 5·6학년) 담임 시수 차이: 같을수록 좋음 */
@@ -712,7 +722,9 @@ function makePlan(P,asg){
   const rows=P.semAvg?[[hrG[0].map((v,g)=>(v+hrG[1][g])/2),(hrAvg[0]+hrAvg[1])/2]]:ss.map(s=>[hrG[s],hrAvg[s]]);
   rows.forEach(([row,avg])=>{const v=[];for(let g=0;g<6;g++)if(S.grades[g].c>0){v.push(row[g]);gradeDev+=(row[g]-avg)**2/rows.length;}if(v.length)hrSpread=Math.max(hrSpread,Math.max(...v)-Math.min(...v));});
   // 한 학년 한 과목을 담임과 전담이 나눠 맡는 경우
-  const partial=asg.reduce((a,o,i)=>a+(o.op.sum>0&&o.op.sum<C[i].hsum?1:0),0);
+  const partial=asg.reduce((a,o,i)=>a+(isPartial(C[i],o.op)?1:0),0);
+  // 학년별 담임 시수(연 평균) 조합: 안을 고를 때 이 조합이 다른 안도 보여 주려고 씀
+  const hrKey=[0,1,2,3,4,5].map(g=>S.grades[g].c>0?(hrG[0][g]+hrG[1][g])/2:'-').join('/');
   let pairDiff=0;
   for(const g of [0,2,4])if(S.grades[g].c>0&&S.grades[g+1].c>0)pairDiff+=pairGap([hrG[0][g],hrG[1][g]],[hrG[0][g+1],hrG[1][g+1]],P);
   const score=dev+prep+extra*5+splits*3+spread*2+cut*1.5+gradeDev*2+partial*2+pairDiff*PAIR_W;
@@ -720,7 +732,7 @@ function makePlan(P,asg){
   per.forEach((q,t)=>{const key=q.items.map(x=>C[x.i].sid+':'+C[x.i].g+':'+x.op.k).sort().join(',');(groups[T[t].group]=groups[T[t].group]||[]).push(key)});
   Object.values(groups).forEach(a=>a.sort());
   const sig=Object.keys(groups).sort((a,b)=>a-b).map(g=>g+'='+groups[g].join('|')).join(';')+'#'+asg.map(o=>o.op.k).join('|');
-  return {asg,per,score,splits,spread,maxU,prep,extra,cut,partial,hrSpread,pairDiff,loA,hiA,J,want,hrAvg,sig,groups};
+  return {asg,per,score,splits,spread,maxU,prep,extra,cut,partial,hrSpread,pairDiff,loA,hiA,J,want,hrAvg,sig,groups,hrKey};
 }
 function dist(a,b){
   let d=0;
@@ -731,10 +743,15 @@ function dist(a,b){
   }
   // 전담에게 준 시간 배분이 다른 학년·과목 수도 차이로 셈
   a.asg.forEach((o,i)=>{if(o.op.k!==b.asg[i].op.k)d++});
+  // 학년별 담임 시수 조합이 다르면 크게 다른 안으로 침
+  if(a.hrKey!==b.hrKey)d+=4;
   return d;
 }
 function pickDiverse(all,k){
-  const out=[];
+  const out=[],seen=new Set();
+  // 먼저 학년별 담임 시수 조합이 서로 다른 안을 점수 순으로 6개까지 (1/2 조합도 여기서 보임)
+  for(const p of all){if(out.length>=Math.ceil(k*0.6))break;if(!seen.has(p.hrKey)){seen.add(p.hrKey);out.push(p);}}
+  // 나머지는 교사 배정이 서로 많이 다른 안으로 채움
   for(const need of [5,4,3,2,1]){
     for(const p of all){
       if(out.length>=k)break;
@@ -742,7 +759,9 @@ function pickDiverse(all,k){
     }
     if(out.length>=k)break;
   }
-  return out.sort((a,b)=>a.score-b.score);
+  // 담임 시수 조합이 서로 다른 안들이 앞(1~6안)에 오고, 같은 조합의 다른 배정은 뒤에 점수순으로
+  const head=out.slice(0,Math.min(out.length,Math.ceil(k*0.6))),tail=out.slice(head.length).sort((a,b)=>a.score-b.score);
+  return head.concat(tail);
 }
 // seed가 0이면 정해진 순서로 먼저 찾고, 그 뒤엔 무작위로 순서를 흔들어 다시 찾음.
 // 같은 후보를 여러 번 찾을 때는 seed를 바꿔 다른 곳을 찾게 함. 끝까지 다 봤으면 true.
@@ -768,7 +787,7 @@ function xCandidates(P,limit){
     (function rec(j){
       if(j===idx.length){
         let cost=0,partial=0,cut=0;const giv=[0,0];
-        idx.forEach((i,q)=>{const ch=C[i],op=xv[q];giv[0]+=op.x[0];giv[1]+=op.x[1];if(op.sum>0&&op.sum<ch.hsum)partial++;cut+=(ch.hsum-op.sum)/2;});
+        idx.forEach((i,q)=>{const ch=C[i],op=xv[q];giv[0]+=op.x[0];giv[1]+=op.x[1];if(isPartial(ch,op))partial++;cut+=(ch.hsum-op.sum)/2;});
         const hrS=[0,1].map(s=>(S.grades[g].tot[P.split?s:0]|0)-giv[s]);
         if(Math.abs(hrS[0]-hrS[1])>SEM_GAP)return;   // 담임 학기 간 차이 3시간까지
         const R=P.hrRange[g],av=(hrS[0]+hrS[1])/2;
@@ -963,15 +982,18 @@ function renderResults(P,r,sec){
     :`준비 부담 한도는 1인당 과목·학년 조합 ${L}개입니다.`;
   const semText=S.rules.sem==='avg'?' 맡는 반은 1년 내내 같고, 시수는 두 학기 평균으로 맞췄습니다.':' 맡는 반은 1년 내내 같고, 1·2학기 시수가 같습니다.';
   const first=Math.min(5,r.picked.length),more=r.picked.length-first;
-  let h=`<div class="res-head"><div class="res-title"><h2>배정안 ${first}가지${more?` <span class="muted" style="font-size:14px;font-weight:500">더보기로 ${r.picked.length}가지까지</span>`:''}</h2>${semNote()}</div>
+  let h=`<div class="res-head"><div class="res-title"><h2>배정안 ${first}가지${more?` <span class="muted" style="font-size:14px;font-weight:500">아래 더보기로 ${r.picked.length}가지까지</span>`:''}</h2>${semNote()}</div>
     <p>모든 안에서 전담 교사 시수는 담임 평균과 같거나 ${P.over}시간 이내로 많습니다(부장은 감경만큼 예외).${P.order?' 담임 시수는 6학년 ≤ 5학년 ≤ 4학년 ≤ 3학년 ≤ 1학년 = 2학년을 지킵니다.':''} ${prepText}${semText} 서로 다른 배정 ${r.count.toLocaleString()}가지를 찾았고(${sec.toFixed(1)}초${r.stopped?', 도중에 멈춤':''}), 그중 점수가 좋으면서 서로 많이 다른 안을 골랐습니다.</p></div>`;
   const labels=labelsFor(r.picked);
   r.picked.slice(0,first).forEach((p,idx)=>{h+=planHTML(P,p,idx,labels[idx])});
   // 6~10안은 '더보기'를 눌러야 보임
+  // 더보기 버튼은 항상 보임. 더 찾은 안이 없으면 누를 수 없게 하고 그렇게 알려 줌
   if(more){
-    h+=`<div class="btn-row"><button class="btn" data-act="more" id="moreBtn">더보기 (${first+1}~${r.picked.length}안)</button></div><div id="morePlans" hidden>`;
+    h+=`<div class="more-row"><button class="btn more" data-act="more" id="moreBtn">더보기 (${first+1}~${r.picked.length}안)</button></div><div id="morePlans" hidden>`;
     r.picked.slice(first).forEach((p,j)=>{h+=planHTML(P,p,first+j,labels[first+j])});
     h+='</div>';
+  }else{
+    h+=`<div class="more-row"><button class="btn more" id="moreBtn" disabled>더보기</button><span class="muted">조건을 모두 지키는 서로 다른 안을 ${r.picked.length}가지만 찾았습니다.</span></div>`;
   }
   box.innerHTML=h;
 }
@@ -981,7 +1003,7 @@ function planHTML(P,p,idx,labels){
   const rangeTxt=sp?`1학기 <b>${p.loA[0]}~${p.hiA[0]}</b> · 2학기 <b>${p.loA[1]}~${p.hiA[1]}</b>시간`:`<b>${p.loA[0]}~${p.hiA[0]}</b>시간`;
   const gave=sp&&p.J[0]!==p.J[1]?`${p.J[0]} / ${p.J[1]}`:p.J[0],wantT=sp&&p.want[0]!==p.want[1]?`${p.want[0]} / ${p.want[1]}`:p.want[0];
   let h=`<article class="plan"><div class="plan-top"><span class="plan-no">${idx+1}안</span>${labels.map(l=>`<span class="tag">${l}</span>`).join('')}</div>
-    <div class="stats"><span>담임 평균 <b>${pair(p.hrAvg[0].toFixed(1),p.hrAvg[s1].toFixed(1))}</b>시간 (학년 간 차이 최대 <b>${mixed(p.hrSpread)}</b>시간${P.semAvg?', 연 평균':''})</span><span>같은 학년군 담임 시수 차이 <b>${mixed(p.pairDiff)}</b>시간</span><span>전담·강사 시수 ${rangeTxt}</span><span>희망 <b>${wantT}</b>시간 중 <b>${gave}</b>시간을 전담이 맡음</span><span>1인 준비 최대 <b>${p.maxU}</b>개</span><span>나눠 맡는 곳 <b>${p.splits}</b>곳</span></div>`;
+    <div class="stats"><span>담임 <b>${hrSummary(p)}</b></span><span>담임 평균 <b>${pair(p.hrAvg[0].toFixed(1),p.hrAvg[s1].toFixed(1))}</b>시간 (학년 간 차이 최대 <b>${mixed(p.hrSpread)}</b>시간${P.semAvg?', 연 평균':''})</span><span>같은 학년군 담임 시수 차이 <b>${mixed(p.pairDiff)}</b>시간</span><span>전담·강사 시수 ${rangeTxt}</span><span>희망 <b>${wantT}</b>시간 중 <b>${gave}</b>시간을 전담이 맡음</span><span>1인 준비 최대 <b>${p.maxU}</b>개</span><span>나눠 맡는 곳 <b>${p.splits}</b>곳</span></div>`;
   // 교사별
   h+=`<h3>교사별로 보기</h3><div class="tbl"><table><thead><tr><th>교사</th><th>맡는 수업</th><th>주당 시수${sp?' (1/2학기)':''}</th><th>준비</th></tr></thead><tbody>`;
   p.per.forEach((q,t)=>{
@@ -1032,6 +1054,16 @@ function perClass(ch,op){
   const partial=op.sum<ch.hsum,diff=op.x[0]!==op.x[1];
   if(!partial&&!diff)return '';
   return ` <span class="cut">반당 주 ${mixed(op.sum/2)}시간${partial?` (희망 ${mixed(ch.hsum/2)})`:''}</span>`;
+}
+// "1·2학년 21과 1/2 · 3·4학년 21 · 5·6학년 20" 처럼 학년군별 담임 시수(연 평균)
+function hrSummary(p){
+  const k=p.hrKey.split('/');
+  return [[0,1],[2,3],[4,5]].map(([a,b])=>{
+    const A=k[a],B=k[b];
+    if(A==='-'&&B==='-')return '';
+    if(A===B)return `${a+1}·${b+1}학년 ${mixed(+A)}`;
+    return [A!=='-'?`${a+1}학년 ${mixed(+A)}`:'',B!=='-'?`${b+1}학년 ${mixed(+B)}`:''].filter(Boolean).join(' · ');
+  }).filter(Boolean).join(' · ');
 }
 function semTitle(x){return S.split&&x[0]!==x[1]?` title="1학기 반당 ${x[0]}시간 · 2학기 반당 ${x[1]}시간"`:''}
 function sgn(x){const v=Math.round(x*10)/10;return (v>=0?'+':'')+v.toFixed(1)}
