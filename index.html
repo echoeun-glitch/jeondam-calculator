@@ -1051,7 +1051,7 @@ function planHTML(P,p,idx,labels){
     const items=q.items.slice().sort((a,b)=>C[a.i].g-C[b.i].g||C[a.i].sname.localeCompare(C[b.i].sname)).map(x=>{
       const ch=C[x.i],ox=x.op.x;
       return `<span class="cls"${semTitle(ox)}>${ch.g+1}학년 ${esc(ch.sname)} ${x.k===ch.c?'전체 ':''}${x.k}학급 <span class="h">주 ${mixed(x.k*x.op.sum/2)}h</span>${perClass(ch,x.op)}</span>`}).join('');
-    const rel=tt.type==='gs'?`(범위 ${tt.lo}~${tt.hi})`:`(담임 평균 ${pair(sgn(q.H[0]-p.hrAvg[0]),sgn(q.H[s1]-p.hrAvg[s1]))})`;
+    const rel=tt.type==='gs'?`(범위 ${tt.lo}~${tt.hi})`:'';
     h+=`<tr><td class="who">${esc(tt.name)}<span class="kind">${tt.type==='gs'?'강사':tt.red?'감경 '+tt.red:'전담'}</span></td>
       <td><div class="cls-list">${items||'<span class="muted">없음</span>'}</div></td>
       <td class="num">${pair(q.H[0],q.H[s1])} <span class="muted">${rel}</span></td>
