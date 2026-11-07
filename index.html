@@ -1,5 +1,17 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>전담 배정 계산기</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="초등학교 교과전담 배정안 5가지를 찾아 주는 계산기">
+<style>
+/* 기본 바탕: 여백 없애기, 숨김 처리, 휴대폰 위아래 안전 영역 */
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
@@ -123,6 +135,8 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
 @media (max-width:560px){.plan{padding:12px}}
 @media (prefers-reduced-motion:no-preference){.plan{animation:rise .25s ease-out both}@keyframes rise{from{transform:translateY(6px)}to{transform:none}}}
 </style>
+</head>
+<body>
 
 <div class="wrap">
   <header>
@@ -1001,3 +1015,5 @@ function sgn(x){const v=Math.round(x*10)/10;return (v>=0?'+':'')+v.toFixed(1)}
 
 renderAll();
 </script>
+</body>
+</html>
