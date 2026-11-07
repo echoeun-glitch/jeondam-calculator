@@ -103,6 +103,30 @@ button{font:inherit;cursor:pointer}
 .more-row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:center}
 .btn.more{padding:10px 28px;font-size:15px;font-weight:600;border-color:var(--accent);color:var(--accent)}
 .btn.more:disabled{opacity:.5;cursor:default}
+/* 배정안 카드: 누르면 미세 조정 */
+.plan.pickable{cursor:pointer;transition:border-color .15s}
+.plan.pickable:hover{border-color:var(--accent)}
+.plan-top .edit-btn{margin-left:auto}
+/* 미세 조정 화면 */
+.ed-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.ed-sum{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--muted);background:var(--sheet);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.ed-sum b{color:var(--ink);font-family:var(--f-num);font-weight:500}
+.ed-warn{margin:0;padding:10px 14px 10px 30px;background:var(--bad-soft);color:var(--bad);border-radius:8px;font-size:14px;display:flex;flex-direction:column;gap:2px}
+.ed-ok{background:var(--ok-soft);color:var(--ok);padding:8px 14px;border-radius:8px;font-size:14px}
+table.ed td,table.ed th{padding:6px 8px}
+table.ed td{white-space:nowrap}
+table.ed input[type=number]{width:3.6em}
+table.ed select{max-width:9em}
+tr.ed-t th{background:var(--accent-soft);border-top:2px solid var(--accent)}
+.ed-thead{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-weight:500}
+.ed-thead .stat{font-size:13px;color:var(--muted)}
+.ed-thead .stat b{color:var(--ink);font-family:var(--f-num);font-weight:500}
+.ed-thead .btn{margin-left:auto;padding:3px 10px;font-size:13px}
+.chip-bad{display:inline-block;font-size:12px;font-weight:600;background:var(--bad-soft);color:var(--bad);border-radius:4px;padding:0 6px;margin-left:4px}
+td.bad,input.bad{color:var(--bad)!important;border-color:var(--bad)!important}
+.ed-grid td{text-align:left;font-size:13px;vertical-align:top}
+.ed-grid .line{white-space:nowrap}
+.ed-grid .hrm{color:var(--muted)}
 .res-head{display:flex;flex-direction:column;gap:6px}
 .res-head p{color:var(--muted);max-width:75ch}
 .stale{background:var(--mark);color:var(--mark-ink);padding:8px 12px;border-radius:6px;font-size:14px}
@@ -142,7 +166,7 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
 </head>
 <body>
 
-<div class="wrap">
+<div class="wrap" id="main">
   <header>
     <div class="eyebrow">교과전담 편성 · 시간표 짜기 전 단계</div>
     <h1>전담 배정 계산기</h1>
@@ -231,6 +255,9 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
     </ol>
   </details>
 </div>
+
+<!-- 미세 조정 화면: 배정안을 누르면 이 화면으로 전체 전환 -->
+<div class="wrap" id="editor" hidden></div>
 
 <script>
 const KEY='jeondam-calc-v1';
@@ -997,7 +1024,9 @@ function semNote(){
     ?`<div class="semnote"><span>두 학기 모두 조건 안으로 맞추면 1,2학기의 시수가 같아집니다.</span><button class="btn" data-act="semswitch">두 학기 모두 조건 안으로 다시 찾기</button></div>`
     :`<div class="semnote"><span>두 학기 모두 조건 안으로 맞춘 결과라 1,2학기의 시수가 같습니다.</span><button class="btn" data-act="semswitch">두 학기 평균 기준으로 다시 찾기</button></div>`;
 }
+let lastRes=null,edits={};            // 마지막 결과와, 안마다 조정한 내용
 function renderResults(P,r,sec){
+  lastRes={P,picked:r.picked};edits={};
   const box=$('#results');
   if(!r.picked.length){
     const tips=[];
@@ -1039,7 +1068,7 @@ function planHTML(P,p,idx,labels){
   const s1=sp?1:0;
   const rangeTxt=sp?`1학기 <b>${p.loA[0]}~${p.hiA[0]}</b> · 2학기 <b>${p.loA[1]}~${p.hiA[1]}</b>시간`:`<b>${p.loA[0]}~${p.hiA[0]}</b>시간`;
   const gave=sp&&p.J[0]!==p.J[1]?`${p.J[0]} / ${p.J[1]}`:p.J[0],wantT=sp&&p.want[0]!==p.want[1]?`${p.want[0]} / ${p.want[1]}`:p.want[0];
-  let h=`<article class="plan"><div class="plan-top"><span class="plan-no">${idx+1}안</span>${labels.map(l=>`<span class="tag">${l}</span>`).join('')}</div>
+  let h=`<article class="plan pickable" data-plan="${idx}" title="눌러서 이 안을 미세 조정"><div class="plan-top"><span class="plan-no">${idx+1}안</span>${labels.map(l=>`<span class="tag">${l}</span>`).join('')}<button class="btn edit-btn" data-act="edOpen" data-i="${idx}">이 안 미세 조정</button></div>
     <div class="stats"><span>담임 <b>${hrSummary(p)}</b></span><span>담임 평균 <b>${pair(p.hrAvg[0].toFixed(1),p.hrAvg[s1].toFixed(1))}</b>시간 (학년 간 차이 최대 <b>${mixed(p.hrSpread)}</b>시간${P.semAvg?', 연 평균':''})</span><span>같은 학년군 담임 시수 차이 <b>${mixed(p.pairDiff)}</b>시간</span><span>전담·강사 시수 ${rangeTxt}</span><span>희망 <b>${wantT}</b>시간 중 <b>${gave}</b>시간을 전담이 맡음</span><span>준비 수업 1인 최대 <b>${p.maxU}</b>개 · 합계 <b>${p.prepSum}</b>개</span>${p.handover?`<span style="color:var(--bad)">학기 중 교사가 바뀌는 학년·과목 <b>${p.handover}</b>곳</span>`:''}<span>나눠 맡는 곳 <b>${p.splits}</b>곳</span></div>`;
   // 교사별
   h+=`<h3>교사별로 보기</h3><div class="tbl"><table><thead><tr><th>교사</th><th>맡는 수업</th><th>주당 시수${sp?' (1/2학기)':''}</th><th>준비</th></tr></thead><tbody>`;
@@ -1104,6 +1133,179 @@ function hrSummary(p){
 }
 function semTitle(x){return S.split&&x[0]!==x[1]?` title="1학기 반당 ${x[0]}시간 · 2학기 반당 ${x[1]}시간"`:''}
 function sgn(x){const v=Math.round(x*10)/10;return (v>=0?'+':'')+v.toFixed(1)}
+
+/* ================= 미세 조정 화면 =================
+   배정안을 '수업 조각' 목록으로 바꿔서 직접 고침.
+   수업 조각 = {누가(t), 학년(g), 과목(sid), 학급 수(k), 반당 시간 [1학기, 2학기](x)}
+   규칙은 막지 않고, 어긋난 곳만 경고로 보여 줌 */
+let ED=null;
+const subjOf=sid=>S.subjects.find(s=>s.id===sid)||{name:'?',h:[[0,0,0,0,0,0],[0,0,0,0,0,0]]};
+const hOf=(sid,g,s)=>subjOf(sid).h[s][g]|0;
+function openEditor(idx){
+  if(!lastRes||!lastRes.picked[idx])return;
+  if(!edits[idx]){
+    const p=lastRes.picked[idx],C=lastRes.P.chunks,items=[];let id=1;
+    p.asg.forEach((o,i)=>{const ch=C[i];o.p.forEach(([t,k])=>items.push({id:id++,t,g:ch.g,sid:ch.sid,k,x:o.op.x.slice()}))});
+    edits[idx]={idx,items,orig:JSON.stringify(items),nextId:id};
+  }
+  ED=edits[idx];
+  $('#main').hidden=true;$('#editor').hidden=false;
+  renderEditor();window.scrollTo(0,0);
+}
+function closeEditor(){
+  $('#editor').hidden=true;$('#main').hidden=false;
+  const card=document.querySelector(`.plan[data-plan="${ED.idx}"]`);if(card)card.scrollIntoView({block:'start'});
+}
+// 지금 조각들로 교사별 시수, 학년별 편성, 담임 시수, 경고를 계산
+function edCalc(){
+  const T=lastRes.P.T,per=T.map(()=>({H:[0,0],units:new Set(),subs:new Set(),grs:new Set()})),cell={},warn=[];
+  ED.items.forEach(it=>{
+    const q=per[it.t];q.H[0]+=it.k*it.x[0];q.H[1]+=it.k*it.x[1];
+    if(it.k>0&&it.x[0]+it.x[1]>0){q.units.add(it.g+':'+it.sid);q.subs.add(it.sid);q.grs.add(it.g);}
+    const key=it.g+':'+it.sid;(cell[key]=cell[key]||{k:0,items:[]});cell[key].k+=it.k;cell[key].items.push(it);
+  });
+  // 학년별 담임 시수 (학년 평균): 총 시수 − 전담이 가져간 시간 ÷ 학급 수
+  const hr=[0,1].map(s=>S.grades.map((G,g)=>{if(!(G.c>0))return null;let r=0;ED.items.forEach(it=>{if(it.g===g)r+=it.k*it.x[s]});return G.tot[s]-r/G.c;}));
+  T.forEach((t,i)=>{
+    const q=per[i],av=(q.H[0]+q.H[1])/2;
+    if(av<t.lo||av>t.hi)warn.push(`${t.name}: 연평균 ${mixed(av)}시간이 시수 범위(${t.lo}~${t.hi}) 밖입니다.`);
+    if(Math.abs(q.H[0]-q.H[1])>(S.rules.semGap|0))warn.push(`${t.name}: 1학기 ${q.H[0]}시간, 2학기 ${q.H[1]}시간으로 차이가 ${S.rules.semGap}시간보다 큽니다.`);
+  });
+  ED.items.forEach(it=>{
+    const G=S.grades[it.g],nm=`${it.g+1}학년 ${subjOf(it.sid).name}`;
+    if(!(G.c>0))warn.push(`${nm}: ${it.g+1}학년에 학급이 없습니다.`);
+    [0,1].forEach(s=>{const h=hOf(it.sid,it.g,s);if(it.x[s]>h)warn.push(`${nm}: ${s+1}학기 반당 ${it.x[s]}시간이 과목 시수(${h}시간)보다 많습니다.`)});
+    if(it.k>0&&((it.x[0]===0)!==(it.x[1]===0)))warn.push(`${nm} (${T[it.t].name}): 한 학기만 전담이 맡아, 한 학급을 1년 내내 같은 교사가 맡지 않습니다.`);
+  });
+  Object.entries(cell).forEach(([key,c])=>{const [g,sid]=key.split(':');const G=S.grades[+g];if(G.c>0&&c.k>G.c)warn.push(`${+g+1}학년 ${subjOf(sid).name}: ${c.k}반을 배정해 학급 수(${G.c}반)를 넘습니다.`)});
+  // 담임 시수 (연 평균): 순서 6 ≤ 5 ≤ 4 ≤ 3 ≤ 1 = 2, 학년별 범위
+  const yr=S.grades.map((G,g)=>G.c>0?(hr[0][g]+hr[1][g])/2:null);
+  if(S.rules.order!==false){
+    let prev=null;
+    for(const g of ORDER){if(yr[g]==null)continue;if(prev!=null&&yr[prev]>yr[g]+1e-9)warn.push(`담임 시수 순서: ${prev+1}학년(${fmt1(yr[prev])})이 ${g+1}학년(${fmt1(yr[g])})보다 많습니다.`);prev=g;}
+    if(yr[0]!=null&&yr[1]!=null&&Math.abs(yr[0]-yr[1])>1e-9)warn.push(`담임 시수: 1학년(${fmt1(yr[0])})과 2학년(${fmt1(yr[1])})이 같지 않습니다.`);
+  }
+  S.grades.forEach((G,g)=>{if(G.hr&&yr[g]!=null&&(yr[g]<G.hr[0]-1e-9||yr[g]>G.hr[1]+1e-9))warn.push(`${g+1}학년 담임 시수 ${fmt1(yr[g])}시간이 정한 범위(${G.hr[0]}~${G.hr[1]}) 밖입니다.`)});
+  return {T,per,cell,hr,yr,warn};
+}
+function fmt1(v){return Math.abs(v*2-Math.round(v*2))<1e-9?mixed(v):v.toFixed(1)}
+function renderEditor(){
+  const c=edCalc(),T=c.T,changed=JSON.stringify(ED.items)!==ED.orig;
+  let h=`<div class="ed-bar"><button class="btn" data-act="edBack">← 배정안 목록으로</button>
+    <button class="btn" data-act="edReset" ${changed?'':'disabled'}>처음 ${ED.idx+1}안으로 되돌리기</button></div>
+    <header><div class="eyebrow">미세 조정</div><h1>${ED.idx+1}안 미세 조정${changed?' <span class="tag" style="font-size:14px;vertical-align:middle">고친 안</span>':''}</h1>
+    <p class="lede">이 화면에서는 규칙에 막히지 않고 무엇이든 바꿀 수 있습니다. 교사별로 보기에서 고치면 학년별 편성표와 시수가 바로 따라 바뀌고, 어긋난 곳은 위에 경고로 표시됩니다. 조정한 내용은 새로 '배정안 찾기'를 하기 전까지 남아 있습니다.</p></header>
+    <div id="edSum"></div><div id="edWarn"></div>
+    <section class="step-sec"><h2>교사별로 보기</h2>
+    <div class="tbl"><table class="ed"><thead><tr><th>학년</th><th>과목</th><th>학급 수</th><th>1학기 반당</th><th>2학기 반당</th><th>주당 시수 (1/2학기)</th><th>담당 교사</th><th></th></tr></thead><tbody>`;
+  const gradeOpts=g=>S.grades.map((G,i)=>`<option value="${i}" ${i===g?'selected':''}>${i+1}학년</option>`).join('');
+  const subjOpts=sid=>S.subjects.map(s=>`<option value="${s.id}" ${s.id===sid?'selected':''}>${esc(s.name)}</option>`).join('');
+  const tOpts=t=>T.map((x,i)=>`<option value="${i}" ${i===t?'selected':''}>${esc(x.name)}</option>`).join('');
+  T.forEach((t,ti)=>{
+    h+=`<tr class="ed-t"><th colspan="8"><div class="ed-thead"><span class="who">${esc(t.name)}<span class="kind">${t.type==='gs'?'강사':'전담'}</span></span><span class="stat" id="edT${ti}"></span><button class="btn" data-act="edAdd" data-t="${ti}">+ 수업 추가</button></div></th></tr>`;
+    const mine=ED.items.filter(it=>it.t===ti).sort((a,b)=>a.g-b.g||subjOf(a.sid).name.localeCompare(subjOf(b.sid).name));
+    if(!mine.length)h+=`<tr><td colspan="8" class="muted">맡은 수업이 없습니다.</td></tr>`;
+    mine.forEach(it=>{
+      h+=`<tr>
+        <td><select data-ed="g" data-id="${it.id}" aria-label="학년">${gradeOpts(it.g)}</select></td>
+        <td><select data-ed="sid" data-id="${it.id}" aria-label="과목">${subjOpts(it.sid)}</select></td>
+        <td><input type="number" min="0" max="30" data-ed="k" data-id="${it.id}" id="edk${it.id}" value="${it.k}" aria-label="학급 수"> 반</td>
+        <td><input type="number" min="0" max="10" data-ed="x0" data-id="${it.id}" id="edx0_${it.id}" value="${it.x[0]}" aria-label="1학기 반당 시간"></td>
+        <td><input type="number" min="0" max="10" data-ed="x1" data-id="${it.id}" id="edx1_${it.id}" value="${it.x[1]}" aria-label="2학기 반당 시간"></td>
+        <td class="num" id="edw${it.id}"></td>
+        <td><select data-ed="t" data-id="${it.id}" aria-label="담당 교사">${tOpts(it.t)}</select></td>
+        <td><button class="del" data-act="edDel" data-id="${it.id}">삭제</button></td></tr>`;
+    });
+  });
+  h+=`</tbody></table></div></section>
+    <section class="step-sec"><h2>학년별 편성표</h2><p class="help">칸마다 맡는 사람·반 수·반당 시간(1학기/2학기)을 보여 줍니다. 전담이 맡지 않은 반은 '담임'으로 표시합니다. 담임 시수는 학년 평균입니다.</p>
+    <div class="tbl" id="edGrid"></div></section>`;
+  $('#editor').innerHTML=h;
+  renderEdDerived(c);
+}
+// 다시 그리지 않고 숫자·편성표·경고만 갱신 (입력 중 커서가 튀지 않게)
+function renderEdDerived(c){
+  c=c||edCalc();const T=c.T;
+  // 교사 머리줄
+  T.forEach((t,ti)=>{
+    const q=c.per[ti],av=(q.H[0]+q.H[1])/2,out=av<t.lo||av>t.hi,gap=Math.abs(q.H[0]-q.H[1])>(S.rules.semGap|0);
+    const el=$('#edT'+ti);if(!el)return;
+    el.innerHTML=`1학기 <b>${q.H[0]}</b> · 2학기 <b>${q.H[1]}</b> · 연평균 <b>${mixed(av)}</b>시간 (범위 ${t.lo}~${t.hi})${out?'<span class="chip-bad">범위 밖</span>':''}${gap?'<span class="chip-bad">학기 차이 큼</span>':''} · 준비 수업 <b>${q.units.size}</b>개 (${q.subs.size}과목·${q.grs.size}개 학년)`;
+  });
+  // 수업 조각별 주당 시수, 과목 시수보다 많으면 빨갛게
+  ED.items.forEach(it=>{
+    const w=$('#edw'+it.id);if(w)w.textContent=`${it.k*it.x[0]} / ${it.k*it.x[1]}시간`;
+    [0,1].forEach(s=>{const inp=$(`#edx${s}_${it.id}`);if(inp)inp.classList.toggle('bad',it.x[s]>hOf(it.sid,it.g,s))});
+    const kc=c.cell[it.g+':'+it.sid],ki=$('#edk'+it.id);if(ki)ki.classList.toggle('bad',!!kc&&kc.k>S.grades[it.g].c);
+  });
+  // 요약
+  const jd=T.map((t,i)=>(c.per[i].H[0]+c.per[i].H[1])/2);
+  const units=c.per.map(q=>q.units.size),allHr=c.yr.filter(v=>v!=null);
+  const totY=S.grades.reduce((a,G)=>a+(G.c|0)*(G.tot[0]+G.tot[1])/2,0),cls=S.grades.reduce((a,G)=>a+(G.c|0),0);
+  const jdSum=c.per.reduce((a,q)=>a+(q.H[0]+q.H[1])/2,0);
+  $('#edSum').innerHTML=`<div class="ed-sum"><span>담임 평균 <b>${cls?((totY-jdSum)/cls).toFixed(1):'-'}</b>시간 (학년 간 차이 최대 <b>${allHr.length?fmt1(Math.max(...allHr)-Math.min(...allHr)):0}</b>시간)</span><span>교사 시수 <b>${mixed(Math.min(...jd))}~${mixed(Math.max(...jd))}</b>시간 (연평균)</span><span>준비 수업 1인 최대 <b>${Math.max(...units)}</b>개 · 합계 <b>${units.reduce((a,b)=>a+b,0)}</b>개</span><span>전담이 맡는 시간 <b>${c.per.reduce((a,q)=>a+q.H[0],0)} / ${c.per.reduce((a,q)=>a+q.H[1],0)}</b>시간 (1/2학기)</span></div>`;
+  $('#edWarn').innerHTML=c.warn.length?`<ul class="ed-warn">${c.warn.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`:`<div class="ed-ok">어긋난 규칙이 없습니다.</div>`;
+  // 학년별 편성표
+  const subs=S.subjects.filter(s=>s.h[0].some(v=>v>0)||s.h[1].some(v=>v>0)||ED.items.some(it=>it.sid===s.id));
+  let g2=`<table class="grid ed-grid"><thead><tr><th>학년</th>${subs.map(s=>`<th>${esc(s.name)}</th>`).join('')}<th>담임 1학기</th><th>담임 2학기</th><th>담임 연평균</th></tr></thead><tbody>`;
+  S.grades.forEach((G,g)=>{
+    if(!(G.c>0))return;
+    g2+=`<tr><th scope="row">${g+1}학년 <span class="muted">${G.c}학급</span></th>`;
+    subs.forEach(s=>{
+      const key=g+':'+s.id,cc=c.cell[key],hh=[hOf(s.id,g,0),hOf(s.id,g,1)];
+      if(!cc&&hh[0]+hh[1]===0){g2+='<td class="none">·</td>';return;}
+      let lines=(cc?cc.items:[]).filter(it=>it.k>0).map(it=>`<div class="line">${esc(T[it.t].name)} ${it.k}반 · ${it.x[0]===it.x[1]?it.x[0]:it.x[0]+'/'+it.x[1]}h</div>`).join('');
+      const used=cc?cc.k:0,rest=G.c-used;
+      if(rest>0&&hh[0]+hh[1]>0)lines+=`<div class="line hrm">담임 ${rest}반 · ${hh[0]===hh[1]?hh[0]:hh[0]+'/'+hh[1]}h</div>`;
+      if(rest<0)lines+=`<span class="chip-bad">학급 수 초과 ${used}/${G.c}</span>`;
+      g2+=`<td>${lines||'<span class="none">·</span>'}</td>`;
+    });
+    const y=c.yr[g],R=G.hr,bad=R&&(y<R[0]-1e-9||y>R[1]+1e-9);
+    g2+=`<td class="num">${fmt1(c.hr[0][g])}</td><td class="num">${fmt1(c.hr[1][g])}</td><td class="num${bad?' bad':''}"><b>${fmt1(y)}</b></td></tr>`;
+  });
+  $('#edGrid').innerHTML=g2+'</tbody></table>';
+  const rb=document.querySelector('[data-act="edReset"]');if(rb)rb.disabled=JSON.stringify(ED.items)===ED.orig;
+}
+// 입력 처리
+document.addEventListener('input',e=>{
+  const el=e.target,k=el.dataset.ed;if(!k||!ED||el.tagName==='SELECT')return;
+  const it=ED.items.find(x=>x.id===+el.dataset.id);if(!it)return;
+  const v=num(el.value);
+  if(k==='k')it.k=v;else if(k==='x0')it.x[0]=v;else if(k==='x1')it.x[1]=v;
+  renderEdDerived();
+});
+document.addEventListener('change',e=>{
+  const el=e.target,k=el.dataset.ed;if(!k||!ED||el.tagName!=='SELECT')return;
+  const it=ED.items.find(x=>x.id===+el.dataset.id);if(!it)return;
+  if(k==='t')it.t=+el.value;
+  else if(k==='g'){it.g=+el.value;it.k=Math.min(it.k,S.grades[it.g].c||it.k);}
+  else if(k==='sid')it.sid=el.value;
+  renderEditor();
+});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');
+  if(b){
+    const a=b.dataset.act;
+    if(a==='edOpen'){openEditor(+b.dataset.i);return;}
+    if(!ED)return;
+    if(a==='edBack'){closeEditor();return;}
+    if(a==='edReset'){ED.items=JSON.parse(ED.orig);renderEditor();return;}
+    if(a==='edDel'){ED.items=ED.items.filter(x=>x.id!==+b.dataset.id);renderEditor();return;}
+    if(a==='edAdd'){
+      const t=+b.dataset.t,tt=lastRes.P.T[t];
+      // 그 교사가 맡을 수 있는 첫 과목·학년으로 한 반을 추가
+      const src=S.teachers.find(x=>x.name.trim()===tt.name)||{};
+      let g=S.grades.findIndex((G,i)=>G.c>0&&(!src.gr||src.gr[i])),sid=(src.subj&&src.subj[0])||(S.subjects[0]&&S.subjects[0].id);
+      if(g<0)g=0;
+      ED.items.push({id:ED.nextId++,t,g,sid,k:1,x:[hOf(sid,g,0),hOf(sid,g,1)]});
+      renderEditor();return;
+    }
+    return;
+  }
+  // 배정안 카드 아무 곳이나 누르면 미세 조정 (표 안의 글자를 고르는 경우는 빼고)
+  const card=e.target.closest('.plan.pickable');
+  if(card&&!window.getSelection().toString())openEditor(+card.dataset.plan);
+});
 
 renderAll();
 </script>
