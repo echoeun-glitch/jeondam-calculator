@@ -867,7 +867,11 @@ function withX(P,xv){return Object.assign({},P,{chunks:P.chunks.map((ch,i)=>Obje
 /* 2단계: 배분 후보마다 누가 몇 학급을 맡을지 찾음.
    최대 1분 동안 조금씩 나눠 계산하고, 그 사이사이 화면에 진행 상황을 보여 줌 */
 const BUDGET=115000;                  // 최대 약 2분
-const tick=()=>new Promise(r=>setTimeout(r,0));
+// 잠깐 쉬면서 화면을 갱신. 브라우저는 가려진 탭의 setTimeout을 1초 이상 늦추므로,
+// 탭이 가려져 있으면 늦춰지지 않는 MessageChannel로 쉼 (다른 창을 보는 동안에도 계산이 계속됨)
+const mc=new MessageChannel(),mcQ=[];
+mc.port1.onmessage=()=>{const f=mcQ.shift();f&&f()};
+const tick=()=>new Promise(r=>{if(document.hidden){mcQ.push(r);mc.port2.postMessage(0);}else setTimeout(r,0);});
 let stopAsked=false;
 async function findPlans(P,rules,onProgress){
   const share=rules.share,pool=new Map(),auto=rules.prep==='auto';
@@ -876,7 +880,7 @@ async function findPlans(P,rules,onProgress){
   const t0=performance.now(),el=()=>performance.now()-t0;
   let lastYield=performance.now();
   const breathe=async(stage,frac,extra)=>{
-    if(performance.now()-lastYield<80)return;
+    if(performance.now()-lastYield<(document.hidden?400:80))return;
     onProgress&&onProgress({stage,frac,found:pool.size,...extra});
     await tick();lastYield=performance.now();
   };
