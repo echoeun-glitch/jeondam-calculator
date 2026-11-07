@@ -236,7 +236,7 @@ function defaultState(){
   const same=a=>[a.slice(),a.slice()];
   return {
     split:true,
-    grades:[{c:5,tot:[23,23]},{c:5,tot:[23,23]},{c:5,tot:[26,26]},{c:5,tot:[26,26]},{c:5,tot:[29,29]},{c:5,tot:[29,29]}],
+    grades:[{c:5,tot:[22,22]},{c:5,tot:[22,22]},{c:5,tot:[26,26]},{c:5,tot:[26,26]},{c:5,tot:[29,29]},{c:5,tot:[29,29]}],
     range:{lo:21,hi:24},
     rel:{over:2},
     subjects:[
@@ -783,49 +783,63 @@ function xCandidates(P,limit){
     return res;
   });
   if(lists.some(l=>!l.length))return [];       // 어떤 학년도 조건을 맞출 배분이 없음
-  // 남은 학년들로 만들 수 있는 J 범위와 최소 비용 (가망 없는 조합은 버림)
-  const G=gs.length,D=P.D;
-  const minC=new Array(G+1).fill(0),loJ=[],hiJ=[];
-  for(let k=0;k<=G;k++){loJ.push(new Array(D).fill(0));hiJ.push(new Array(D).fill(0));}
-  for(let k=G-1;k>=0;k--){
-    minC[k]=minC[k+1]+lists[k][0].cost;
-    for(let d=0;d<D;d++){loJ[k][d]=loJ[k+1][d]+Math.min(...lists[k].map(o=>o.J[d]));hiJ[k][d]=hiJ[k+1][d]+Math.max(...lists[k].map(o=>o.J[d]));}
-  }
-  // 담임 시수 순서: 이미 정해진 학년들과 비교해서 어긋나면 버림
-  const curHr=new Array(6).fill(null);
-  for(let g=0;g<6;g++)if(S.grades[g].c>0&&!byG[g])curHr[g]=[0,1].map(s=>S.grades[g].tot[P.split?s:0]|0);
-  const orderFits=(g,hr)=>{
-    if(!P.order)return true;
-    for(let h=0;h<6;h++){
-      const o=curHr[h];if(!o||h===g)continue;
-      const pairs=P.semAvg?[[hr[0]+hr[1],o[0]+o[1]]]:ss.map(s=>[hr[s],o[s]]);
-      const same=(g<2&&h<2);                       // 1학년과 2학년은 같아야 함
-      for(const [a,b] of pairs){if(same?a!==b:(POS[g]<POS[h]?a>b:b>a))return false;}
-    }
-    return true;
+
+  // 2) 학년마다 '담임 시수(두 학기 합)' 단계로 묶음. 단계마다 비용이 낮은 배분 몇 개만 남김.
+  //    담임 시수가 정해지면 그 학년이 전담에게 주는 시간(J)도 정해지므로, 단계만 골라도 J를 알 수 있음
+  const lv=lists.map(res=>{
+    const m=new Map();
+    res.forEach(o=>{const h=o.hr[0]+o.hr[1];if(!m.has(h))m.set(h,[]);const a=m.get(h);if(a.length<6)a.push(o);});
+    return [...m.entries()].map(([h,opts])=>({h,opts,best:opts[0].cost,J:opts[0].J[0]})).sort((a,b)=>b.h-a.h);
+  });
+  const gi={};gs.forEach((g,k)=>gi[g]=k);
+  const B=P.band[0];
+  // 순서 조건을 쓰면, 담임 시수가 많아야 하는 학년(2·1·3·4·5·6학년 순)부터 정함
+  const seq=[1,0,2,3,4,5].filter(g=>byG[g]);
+  const H={};                                   // 정해진 학년의 담임 시수(두 학기 합)
+  for(let g=0;g<6;g++)if(S.grades[g].c>0&&!byG[g])H[g]=(S.grades[g].tot[0]|0)+(S.grades[g].tot[P.split?1:0]|0);
+  // 이미 정해진 학년들로부터, 학년 g가 가질 수 있는 담임 시수 범위
+  const allowed=g=>{
+    let lo=-Infinity,hi=Infinity;
+    if(P.order)for(const k in H){const h=+k;if(h===g)continue;const v=H[h];
+      if(g<2&&h<2){lo=Math.max(lo,v);hi=Math.min(hi,v);}           // 1학년 = 2학년
+      else if(POS[g]<POS[h])hi=Math.min(hi,v);else lo=Math.max(lo,v);}
+    return [lo,hi];
   };
-  const out=[],choice=[];let steps=0;
-  const worst=()=>out.length<limit?Infinity:out[out.length-1].cost;
-  (function rec2(k,cost,J){
-    if(steps>3000000)return;
-    if(k===G){
-      // 비용 순서를 유지하며 끼워 넣기
-      let lo=0,hi=out.length;while(lo<hi){const mid=(lo+hi)>>1;if(out[mid].cost<=cost)lo=mid+1;else hi=mid;}
-      out.splice(lo,0,{cost,choice:choice.slice()});if(out.length>limit)out.pop();
-      return;
+  const profiles=[];let steps=0;const pick=[];
+  (function rec3(k,cost,J){
+    if(++steps>2000000||profiles.length>200000)return;
+    if(k===seq.length){if(J>=B.jmin&&J<=B.jmax)profiles.push({cost,pick:pick.slice()});return;}
+    const g=seq[k],[lo,hi]=allowed(g);
+    for(const L of lv[gi[g]]){
+      if(L.h<lo||L.h>hi)continue;
+      H[g]=L.h;
+      // 남은 학년들이 만들 수 있는 J의 최소·최대 (순서 조건 반영)
+      let rMin=0,rMax=0,ok=true;
+      for(let r=k+1;r<seq.length&&ok;r++){
+        const [a,b]=allowed(seq[r]);const cand=lv[gi[seq[r]]].filter(x=>x.h>=a&&x.h<=b);
+        if(!cand.length){ok=false;break;}
+        rMin+=Math.min(...cand.map(x=>x.J));rMax+=Math.max(...cand.map(x=>x.J));
+      }
+      const nJ=J+L.J;
+      if(ok&&nJ+rMin<=B.jmax&&nJ+rMax>=B.jmin){
+        const mate=PAIR[g],pen=(mate in H&&mate!==g&&(mate in H))?Math.abs(L.h-H[mate])/2*PAIR_W:0;
+        pick.push({g,L});rec3(k+1,cost+L.best+pen,nJ);pick.pop();
+      }
+      delete H[g];
     }
-    for(const o of lists[k]){
-      if(++steps>3000000)return;                    // 걸러지는 조합도 세어서 너무 오래 돌지 않게
-      if(cost+o.cost+minC[k+1]>=worst())break;
-      let fine=true;const nJ=J.map((v,d)=>v+o.J[d]);
-      for(let d=0;d<D;d++){const B=P.band[d];if(nJ[d]+loJ[k+1][d]>B.jmax||nJ[d]+hiJ[k+1][d]<B.jmin){fine=false;break;}}
-      if(!fine||!orderFits(gs[k],o.hr))continue;
-      const mate=curHr[PAIR[gs[k]]],extra=mate?pairGap(o.hr,mate,P)*PAIR_W:0;
-      if(cost+o.cost+extra+minC[k+1]>=worst())continue;
-      curHr[gs[k]]=o.hr;choice.push(o);rec2(k+1,cost+o.cost+extra,nJ);choice.pop();curHr[gs[k]]=null;
-    }
-  })(0,0,new Array(D).fill(0));
-  return out.map(o=>{const x=new Array(C.length);o.choice.forEach((c,k)=>byG[gs[k]].forEach((i,q)=>x[i]=c.xv[q]));return x});
+  })(0,0,0);
+  profiles.sort((a,b)=>a.cost-b.cost);
+
+  // 3) 좋은 담임 시수 조합마다, 가장 좋은 배분과 학년 하나만 바꾼 배분들을 후보로 냄
+  const out=[];
+  for(const pf of profiles){
+    if(out.length>=limit*3)break;
+    const base=pf.pick.map(p=>p.L.opts[0]);
+    out.push({cost:pf.cost,choice:base,pf});
+    pf.pick.forEach((p,j)=>p.L.opts.slice(1).forEach(o=>{const c=base.slice();c[j]=o;out.push({cost:pf.cost+o.cost-p.L.best,choice:c,pf});}));
+  }
+  out.sort((a,b)=>a.cost-b.cost);
+  return out.slice(0,limit).map(o=>{const x=new Array(C.length);o.choice.forEach((c,j)=>byG[o.pf.pick[j].g].forEach((i,q)=>x[i]=c.xv[q]));return x});
 }
 function withX(P,xv){return Object.assign({},P,{chunks:P.chunks.map((ch,i)=>Object.assign({},ch,{opts:[xv[i]]}))})}
 
