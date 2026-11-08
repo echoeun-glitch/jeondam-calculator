@@ -22,6 +22,7 @@ img{max-width:100%}
   --mark:#f4df85; --mark-ink:#473a00;
   --bad:#ad3f2a; --bad-soft:#f8e5df; --ok:#2e7744; --ok-soft:#e0f0e4;
   /* 나눠 맡는 학년·과목 묶음 색 (밝은·어두운 화면 모두에서 보이는 중간 밝기) */
+  --ico-pdf:#d93a2b; --ico-xls:#1f7a45; --ico-hwp:#2d6fd6;
   --g1:#e07a5f; --g2:#3d85c6; --g3:#6aa84f; --g4:#e6a817; --g5:#9b5de5; --g6:#e05ca6; --g7:#1fa3a3; --g8:#8d6e63;
   --f-display:"Gowun Batang","Nanum Myeongjo","Batang",serif;
   --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
@@ -140,6 +141,14 @@ tr.grp td:first-child{padding-left:12px}
 td.grp{padding-left:12px!important}
 /* 내보내기 버튼 줄 */
 .ed-actions{display:flex;flex-wrap:wrap;gap:8px}
+/* 버튼 앞 작은 파일 아이콘 (실제 로고가 아닌 파일 종류 표시) */
+.ico-btn{display:inline-flex;align-items:center;gap:7px}
+.ico-btn:disabled{opacity:.5;cursor:default}
+.fico{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 4px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:.02em;color:#fff;font-family:var(--f-body);line-height:1}
+.fico.pdf{background:var(--ico-pdf)}
+.fico.xls{background:var(--ico-xls);font-size:12px}
+.fico.hwp{background:var(--ico-hwp);font-size:12px}
+.uico{width:18px;height:18px;color:var(--accent)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .btn.primary:hover{color:var(--accent-ink);opacity:.9}
 /* 인쇄 전용: 화면에서는 숨기고, 미세 조정에서 인쇄할 때만 이 영역만 찍힘 */
@@ -1249,10 +1258,10 @@ function renderEditor(){
   const c=edCalc(),T=c.T,changed=JSON.stringify(ED.items)!==ED.orig;
   let h=`<div class="ed-bar"><button class="btn" data-act="edBack">← 배정안 목록으로</button>
     <div class="ed-actions">
-      <button class="btn primary" data-act="edPrint" title="A4 가로로 인쇄합니다. 인쇄 창에서 'PDF로 저장'을 고르면 PDF 파일이 됩니다.">인쇄 / PDF</button>
-      <button class="btn" data-act="edXlsx" title="교사별, 학년별 편성표, 요약 시트가 든 엑셀 파일을 내려받습니다.">엑셀로 내보내기</button>
-      <button class="btn" data-act="edCopy" title="두 표를 복사합니다. 한글이나 엑셀에서 붙여 넣으면 표 모양 그대로 들어갑니다.">표 복사</button>
-      <button class="btn" data-act="edReset" ${changed?'':'disabled'}>처음 ${ED.idx+1}안으로 되돌리기</button>
+      <button class="btn ico-btn" data-act="edPrint" title="A4 가로로 인쇄합니다. 인쇄 창에서 'PDF로 저장'을 고르면 PDF 파일이 됩니다."><span class="fico pdf" aria-hidden="true">PDF</span>인쇄 / PDF</button>
+      <button class="btn ico-btn" data-act="edXlsx" title="교사별, 학년별 편성표, 요약 시트가 든 엑셀 파일을 내려받습니다."><span class="fico xls" aria-hidden="true">X</span>엑셀로 내보내기</button>
+      <button class="btn ico-btn" data-act="edCopy" title="두 표를 복사합니다. 한글이나 엑셀에서 붙여 넣으면 표 모양 그대로 들어갑니다."><span class="fico hwp" aria-hidden="true">한</span>표 복사</button>
+      <button class="btn ico-btn" data-act="edReset" ${changed?'':'disabled'} title="이 안에서 조정한 내용을 모두 취소하고 처음 ${ED.idx+1}안으로 되돌립니다."><svg class="uico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>조정 취소</button>
     </div></div>
     <header><div class="eyebrow">미세 조정</div><h1>${ED.idx+1}안 미세 조정${changed?' <span class="tag" style="font-size:14px;vertical-align:middle">고친 안</span>':''}</h1>
     <p class="lede">교사별로 보기에서 고치면 학년별 편성표와 시수가 바로 따라 바뀝니다. 학급 수를 넘기거나 과목 시수보다 많이 주는 것처럼 실제로 있을 수 없는 조정은 막고, 시수 범위·담임 시수 순서처럼 학교 기준과 다른 곳은 노란색으로 알려 줍니다. 조정한 내용은 새로 '배정안 찾기'를 하기 전까지 남아 있습니다.</p></header>
