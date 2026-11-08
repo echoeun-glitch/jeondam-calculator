@@ -116,6 +116,8 @@ button{font:inherit;cursor:pointer}
 .ed-sum b{color:var(--ink);font-family:var(--f-num);font-weight:500}
 .ed-warn{margin:0;padding:10px 14px 10px 30px;background:var(--bad-soft);color:var(--bad);border-radius:8px;font-size:14px;display:flex;flex-direction:column;gap:2px}
 .ed-ok{background:var(--ok-soft);color:var(--ok);padding:8px 14px;border-radius:8px;font-size:14px}
+.ed-title{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px}
+.ed-caution{color:var(--bad);font-weight:600;font-size:14px;max-width:46ch;line-height:1.45}
 .verdict{font-weight:700;font-size:16px;padding:10px 14px;border-radius:8px}
 .verdict.ok{background:var(--ok-soft);color:var(--ok)}
 .verdict.bad{background:var(--bad-soft);color:var(--bad)}
@@ -1265,7 +1267,7 @@ function renderEditor(){
       <button class="btn ico-btn" data-act="edReset" ${changed?'':'disabled'} title="이 안에서 조정한 내용을 모두 취소하고 처음 ${ED.idx+1}안으로 되돌립니다."><svg class="uico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>조정 취소</button>
       <button class="btn ico-btn assign-btn" data-act="edAssign" title="이 안대로 전담을 실제 시간표에 배정합니다 (준비 중)"><svg class="uico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M9 9.5v11M15 9.5v11M3 15h18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>배정하기</button>
     </div></div>
-    <header><div class="eyebrow">미세 조정</div><h1>${ED.idx+1}안 미세 조정${changed?' <span class="tag" style="font-size:14px;vertical-align:middle">고친 안</span>':''}</h1>
+    <header><div class="eyebrow">미세 조정</div><div class="ed-title"><h1>${ED.idx+1}안 미세 조정${changed?' <span class="tag" style="font-size:14px;vertical-align:middle">고친 안</span>':''}</h1><p class="ed-caution" role="note">! 계산기의 우선순위에 의해 계산했습니다. 경험에 의한 지혜로운 배정을 위해 미세 조정을 해주세요.</p></div>
     <p class="lede">교사별로 보기에서 고치면 학년별 편성표와 시수가 바로 따라 바뀝니다. 학급 수를 넘기거나 과목 시수보다 많이 주는 것처럼 실제로 있을 수 없는 조정은 막고, 시수 범위·담임 시수 순서처럼 학교 기준과 다른 곳은 노란색으로 알려 줍니다. 조정한 내용은 새로 '배정안 찾기'를 하기 전까지 남아 있습니다.</p></header>
     <div id="edSum"></div><div id="edWarn" style="display:flex;flex-direction:column;gap:8px"></div><div id="edMsg"></div>
     <section class="step-sec"><h2>교사별로 보기</h2><p class="help">같은 색 점이 붙은 줄은 같은 학년·과목을 나눠 맡는 줄입니다. 한 줄의 반당 시간을 바꾸면 같은 색 줄도 함께 바뀝니다.</p>
