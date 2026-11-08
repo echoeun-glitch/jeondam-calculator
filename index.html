@@ -1125,7 +1125,7 @@ function planHTML(P,p,idx,labels){
   let h=`<article class="plan pickable" data-plan="${idx}" title="눌러서 이 안을 선택하고 미세 조정"><div class="plan-top"><span class="plan-no">${idx+1}안</span>${labels.map(l=>`<span class="tag">${l}</span>`).join('')}<button class="btn edit-btn" data-act="edOpen" data-i="${idx}">선택 및 미세 조정</button></div>
     <div class="stats"><span>담임 <b>${hrSummary(p)}</b></span><span>담임 평균 <b>${pair(p.hrAvg[0].toFixed(1),p.hrAvg[s1].toFixed(1))}</b>시간 (학년 간 차이 최대 <b>${mixed(p.hrSpread)}</b>시간${P.semAvg?', 연 평균':''})</span><span>같은 학년군 담임 시수 차이 <b>${mixed(p.pairDiff)}</b>시간</span><span>전담·강사 시수 ${rangeTxt}</span><span>희망 <b>${wantT}</b>시간 중 <b>${gave}</b>시간을 전담이 맡음</span><span>준비 수업 1인 최대 <b>${p.maxU}</b>개 · 합계 <b>${p.prepSum}</b>개</span>${p.handover?`<span style="color:var(--bad)">학기 중 교사가 바뀌는 학년·과목 <b>${p.handover}</b>곳</span>`:''}<span>나눠 맡는 곳 <b>${p.splits}</b>곳</span></div>`;
   // 교사별
-  h+=`<h3>교사별로 보기</h3><div class="tbl"><table><thead><tr><th>교사</th><th>맡는 수업</th><th>주당 시수${sp?' (1/2학기)':''}</th><th>준비</th></tr></thead><tbody>`;
+  h+=`<h3>교사별로 보기</h3><div class="tbl"><table><thead><tr><th>교사</th><th>맡는 수업</th><th>주당 시수 (연평균)</th><th>준비</th></tr></thead><tbody>`;
   p.per.forEach((q,t)=>{
     const tt=T[t];
     const items=q.items.slice().sort((a,b)=>C[a.i].g-C[b.i].g||C[a.i].sname.localeCompare(C[b.i].sname)).map(x=>{
@@ -1134,7 +1134,7 @@ function planHTML(P,p,idx,labels){
     const rel=tt.type==='gs'?`(범위 ${tt.lo}~${tt.hi})`:'';
     h+=`<tr><td class="who">${esc(tt.name)}<span class="kind">${tt.type==='gs'?'강사':'전담'}</span></td>
       <td><div class="cls-list">${items||'<span class="muted">없음</span>'}</div></td>
-      <td class="num">${pair(q.H[0],q.H[s1])} <span class="muted">${rel}</span></td>
+      <td class="num"><b>${mixed((q.H[0]+q.H[s1])/2)}</b>${sp?` <span class="muted">(1학기 ${q.H[0]} · 2학기 ${q.H[s1]})</span>`:''} <span class="muted">${rel}</span></td>
       <td class="num">${q.U}개 <span class="muted">(${q.nS}과목·${q.nG}개 학년)</span></td></tr>`;
   });
   h+='</tbody></table></div>';
