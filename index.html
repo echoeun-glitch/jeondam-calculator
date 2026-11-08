@@ -1257,6 +1257,8 @@ function edCalc(){
   S.grades.forEach((G,g)=>{if(G.hr&&yr[g]!=null&&(yr[g]<G.hr[0]-1e-9||yr[g]>G.hr[1]+1e-9))warn.push(`${g+1}학년 담임 시수 ${fmt1(yr[g])}시간이 정한 범위(${G.hr[0]}~${G.hr[1]}) 밖입니다.`)});
   return {T,per,cell,hr,yr,warn,hard};
 }
+// 반당 시간 [1학기, 2학기] 표시: 같으면 "3h", 다르면 "1학기 3·2학기 2h" (빗금은 분수처럼 읽혀서 쓰지 않음)
+function semH(x){return x[0]===x[1]?`${x[0]}h`:`1학기 ${x[0]}·2학기 ${x[1]}h`}
 function fmt1(v){return Math.abs(v*2-Math.round(v*2))<1e-9?mixed(v):v.toFixed(1)}
 function renderEditor(){
   const c=edCalc(),T=c.T,changed=JSON.stringify(ED.items)!==ED.orig;
@@ -1340,9 +1342,9 @@ function renderEdDerived(c){
     subs.forEach(s=>{
       const key=g+':'+s.id,cc=c.cell[key],hh=[hOf(s.id,g,0),hOf(s.id,g,1)];
       if(!cc&&hh[0]+hh[1]===0){g2+='<td class="none">·</td>';return;}
-      let lines=(cc?cc.items:[]).filter(it=>it.k>0).map(it=>`<div class="line">${esc(T[it.t].name)} ${it.k}반 · ${it.x[0]===it.x[1]?it.x[0]:it.x[0]+'/'+it.x[1]}h</div>`).join('');
+      let lines=(cc?cc.items:[]).filter(it=>it.k>0).map(it=>`<div class="line">${esc(T[it.t].name)} ${it.k}반 · ${semH(it.x)}</div>`).join('');
       const used=cc?cc.k:0,rest=G.c-used;
-      if(rest>0&&hh[0]+hh[1]>0)lines+=`<div class="line hrm">담임 ${rest}반 · ${hh[0]===hh[1]?hh[0]:hh[0]+'/'+hh[1]}h</div>`;
+      if(rest>0&&hh[0]+hh[1]>0)lines+=`<div class="line hrm">담임 ${rest}반 · ${semH(hh)}</div>`;
       if(rest<0)lines+=`<span class="chip-bad">학급 수 초과 ${used}/${G.c}</span>`;
       const gc=gcol[key];
       g2+=`<td${gc?` class="grp" style="--gc:${gc}"`:''}>${gc?'<span class="gdot"></span>':''}${lines||'<span class="none">·</span>'}</td>`;
@@ -1394,7 +1396,7 @@ document.addEventListener('change',e=>{
 /* ================= 내보내기: 인쇄 / 엑셀 / 표 복사 =================
    세 가지 모두 같은 표 데이터(edExport)에서 만듦 */
 function edExport(){
-  const c=edCalc(),T=c.T,hx=x=>x[0]===x[1]?String(x[0]):x[0]+'/'+x[1];
+  const c=edCalc(),T=c.T,hx=x=>semH(x).replace(/h$/,'');
   const today=new Date(),date=`${today.getFullYear()}. ${today.getMonth()+1}. ${today.getDate()}.`;
   const title=`전담 배정 ${ED.idx+1}안${JSON.stringify(ED.items)!==ED.orig?' (미세 조정)':''}`;
   const totY=S.grades.reduce((a,G)=>a+(G.c|0)*(G.tot[0]+G.tot[1])/2,0),cls=S.grades.reduce((a,G)=>a+(G.c|0),0);
