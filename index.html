@@ -138,6 +138,27 @@ td.bad,input.bad{color:var(--bad)!important;border-color:var(--bad)!important}
 tr.grp td:first-child,td.grp{box-shadow:inset 5px 0 0 var(--gc)}
 tr.grp td:first-child{padding-left:12px}
 td.grp{padding-left:12px!important}
+/* 내보내기 버튼 줄 */
+.ed-actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{color:var(--accent-ink);opacity:.9}
+/* 인쇄 전용: 화면에서는 숨기고, 미세 조정에서 인쇄할 때만 이 영역만 찍힘 */
+#printArea{display:none}
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  body.print-ed{background:#fff;color:#000}
+  body.print-ed #main,body.print-ed #editor{display:none!important}
+  body.print-ed #printArea{display:block!important;font-family:var(--f-body);font-size:10pt;color:#000}
+  #printArea h1{font-size:15pt;margin:0 0 4px}
+  #printArea .pmeta{font-size:9.5pt;margin:0 0 8px}
+  #printArea h2{font-size:12pt;margin:10px 0 4px}
+  #printArea table{border-collapse:collapse;width:100%;margin-bottom:6px}
+  #printArea th,#printArea td{border:1px solid #000;padding:3px 5px;font-size:9.5pt;text-align:center;vertical-align:middle;color:#000;background:#fff}
+  #printArea thead th{background:#eee}
+  #printArea tr.ptot td{font-weight:700;background:#f4f4f4}
+  #printArea .pgrid{page-break-before:always}
+  #printArea ul{margin:4px 0 0;padding-left:18px;font-size:9pt}
+}
 .gdot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--gc);margin-right:6px;vertical-align:middle}
 .res-head{display:flex;flex-direction:column;gap:6px}
 .res-head p{color:var(--muted);max-width:75ch}
@@ -270,6 +291,8 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
 
 <!-- 미세 조정 화면: 배정안을 누르면 이 화면으로 전체 전환 -->
 <div class="wrap" id="editor" hidden></div>
+<!-- 인쇄할 때만 보이는 영역 (미세 조정 화면의 '인쇄 / PDF') -->
+<div id="printArea"></div>
 
 <script>
 const KEY='jeondam-calc-v1';
@@ -1086,7 +1109,7 @@ function planHTML(P,p,idx,labels){
   const s1=sp?1:0;
   const rangeTxt=sp?`1학기 <b>${p.loA[0]}~${p.hiA[0]}</b> · 2학기 <b>${p.loA[1]}~${p.hiA[1]}</b>시간`:`<b>${p.loA[0]}~${p.hiA[0]}</b>시간`;
   const gave=sp&&p.J[0]!==p.J[1]?`${p.J[0]} / ${p.J[1]}`:p.J[0],wantT=sp&&p.want[0]!==p.want[1]?`${p.want[0]} / ${p.want[1]}`:p.want[0];
-  let h=`<article class="plan pickable" data-plan="${idx}" title="눌러서 이 안을 미세 조정"><div class="plan-top"><span class="plan-no">${idx+1}안</span>${labels.map(l=>`<span class="tag">${l}</span>`).join('')}<button class="btn edit-btn" data-act="edOpen" data-i="${idx}">이 안 미세 조정</button></div>
+  let h=`<article class="plan pickable" data-plan="${idx}" title="눌러서 이 안을 선택하고 미세 조정"><div class="plan-top"><span class="plan-no">${idx+1}안</span>${labels.map(l=>`<span class="tag">${l}</span>`).join('')}<button class="btn edit-btn" data-act="edOpen" data-i="${idx}">선택 및 미세 조정</button></div>
     <div class="stats"><span>담임 <b>${hrSummary(p)}</b></span><span>담임 평균 <b>${pair(p.hrAvg[0].toFixed(1),p.hrAvg[s1].toFixed(1))}</b>시간 (학년 간 차이 최대 <b>${mixed(p.hrSpread)}</b>시간${P.semAvg?', 연 평균':''})</span><span>같은 학년군 담임 시수 차이 <b>${mixed(p.pairDiff)}</b>시간</span><span>전담·강사 시수 ${rangeTxt}</span><span>희망 <b>${wantT}</b>시간 중 <b>${gave}</b>시간을 전담이 맡음</span><span>준비 수업 1인 최대 <b>${p.maxU}</b>개 · 합계 <b>${p.prepSum}</b>개</span>${p.handover?`<span style="color:var(--bad)">학기 중 교사가 바뀌는 학년·과목 <b>${p.handover}</b>곳</span>`:''}<span>나눠 맡는 곳 <b>${p.splits}</b>곳</span></div>`;
   // 교사별
   h+=`<h3>교사별로 보기</h3><div class="tbl"><table><thead><tr><th>교사</th><th>맡는 수업</th><th>주당 시수${sp?' (1/2학기)':''}</th><th>준비</th></tr></thead><tbody>`;
@@ -1225,7 +1248,12 @@ function fmt1(v){return Math.abs(v*2-Math.round(v*2))<1e-9?mixed(v):v.toFixed(1)
 function renderEditor(){
   const c=edCalc(),T=c.T,changed=JSON.stringify(ED.items)!==ED.orig;
   let h=`<div class="ed-bar"><button class="btn" data-act="edBack">← 배정안 목록으로</button>
-    <button class="btn" data-act="edReset" ${changed?'':'disabled'}>처음 ${ED.idx+1}안으로 되돌리기</button></div>
+    <div class="ed-actions">
+      <button class="btn primary" data-act="edPrint" title="A4 가로로 인쇄합니다. 인쇄 창에서 'PDF로 저장'을 고르면 PDF 파일이 됩니다.">인쇄 / PDF</button>
+      <button class="btn" data-act="edXlsx" title="교사별, 학년별 편성표, 요약 시트가 든 엑셀 파일을 내려받습니다.">엑셀로 내보내기</button>
+      <button class="btn" data-act="edCopy" title="두 표를 복사합니다. 한글이나 엑셀에서 붙여 넣으면 표 모양 그대로 들어갑니다.">표 복사</button>
+      <button class="btn" data-act="edReset" ${changed?'':'disabled'}>처음 ${ED.idx+1}안으로 되돌리기</button>
+    </div></div>
     <header><div class="eyebrow">미세 조정</div><h1>${ED.idx+1}안 미세 조정${changed?' <span class="tag" style="font-size:14px;vertical-align:middle">고친 안</span>':''}</h1>
     <p class="lede">교사별로 보기에서 고치면 학년별 편성표와 시수가 바로 따라 바뀝니다. 학급 수를 넘기거나 과목 시수보다 많이 주는 것처럼 실제로 있을 수 없는 조정은 막고, 시수 범위·담임 시수 순서처럼 학교 기준과 다른 곳은 노란색으로 알려 줍니다. 조정한 내용은 새로 '배정안 찾기'를 하기 전까지 남아 있습니다.</p></header>
     <div id="edSum"></div><div id="edWarn" style="display:flex;flex-direction:column;gap:8px"></div><div id="edMsg"></div>
@@ -1349,6 +1377,116 @@ document.addEventListener('change',e=>{
   it.kc=nk;
   renderEditor();
 });
+/* ================= 내보내기: 인쇄 / 엑셀 / 표 복사 =================
+   세 가지 모두 같은 표 데이터(edExport)에서 만듦 */
+function edExport(){
+  const c=edCalc(),T=c.T,hx=x=>x[0]===x[1]?String(x[0]):x[0]+'/'+x[1];
+  const today=new Date(),date=`${today.getFullYear()}. ${today.getMonth()+1}. ${today.getDate()}.`;
+  const title=`전담 배정 ${ED.idx+1}안${JSON.stringify(ED.items)!==ED.orig?' (미세 조정)':''}`;
+  const totY=S.grades.reduce((a,G)=>a+(G.c|0)*(G.tot[0]+G.tot[1])/2,0),cls=S.grades.reduce((a,G)=>a+(G.c|0),0);
+  const jdSum=c.per.reduce((a,q)=>a+(q.H[0]+q.H[1])/2,0);
+  const hrAvg=cls?((totY-jdSum)/cls).toFixed(1):'-';
+  const verdict=c.hard.length?`꼭 고칠 곳 ${c.hard.length}곳`:`그대로 쓸 수 있음${c.warn.length?` (학교 기준과 다른 곳 ${c.warn.length}곳)`:''}`;
+  // 교사별: 교사마다 수업 줄 + 합계 줄
+  const teachers=T.map((t,ti)=>{
+    const q=c.per[ti];
+    const rows=ED.items.filter(it=>it.t===ti&&it.k>0).sort((a,b)=>a.g-b.g||subjOf(a.sid).name.localeCompare(subjOf(b.sid).name))
+      .map(it=>({g:`${it.g+1}학년`,s:subjOf(it.sid).name,k:it.k,x:it.x.slice(),w:[it.k*it.x[0],it.k*it.x[1]]}));
+    return {name:t.name,kind:t.type==='gs'?'강사':'전담',rows,H:q.H.slice(),avg:(q.H[0]+q.H[1])/2,range:`${t.lo}~${t.hi}`,units:q.units.size};
+  });
+  // 학년별 편성표
+  const subs=S.subjects.filter(s=>s.h[0].some(v=>v>0)||s.h[1].some(v=>v>0)||ED.items.some(it=>it.sid===s.id));
+  const grid=S.grades.map((G,g)=>{
+    if(!(G.c>0))return null;
+    const cells=subs.map(s=>{
+      const cc=c.cell[g+':'+s.id],hh=[hOf(s.id,g,0),hOf(s.id,g,1)];
+      if(!cc&&hh[0]+hh[1]===0)return [];
+      const lines=(cc?cc.items:[]).filter(it=>it.k>0).map(it=>`${T[it.t].name} ${it.k}반 ${hx(it.x)}h`);
+      const rest=G.c-(cc?cc.k:0);if(rest>0&&hh[0]+hh[1]>0)lines.push(`담임 ${rest}반 ${hx(hh)}h`);
+      return lines;
+    });
+    return {name:`${g+1}학년 (${G.c}학급)`,cells,hr:[c.hr[0][g],c.hr[1][g],c.yr[g]]};
+  }).filter(Boolean);
+  return {title,date,hrAvg,verdict,teachers,subs:subs.map(s=>s.name),grid,hard:c.hard,warn:c.warn};
+}
+// 표 HTML (인쇄·복사 공용). inline=true면 한글에 붙일 때 선이 보이도록 칸마다 선 스타일을 넣음
+function edTablesHTML(X,inline){
+  const b=inline?' style="border:1px solid #000;padding:3px 6px;text-align:center"':'';
+  const tb=inline?' style="border-collapse:collapse"':'';
+  const n1=v=>fmt1(v);
+  let t=`<table${tb}><thead><tr>${['교사','학년','과목','학급 수','1학기 반당','2학기 반당','1학기 주당','2학기 주당'].map(h=>`<th${b}>${h}</th>`).join('')}</tr></thead><tbody>`;
+  X.teachers.forEach(tc=>{
+    const n=Math.max(1,tc.rows.length)+1;
+    if(!tc.rows.length)t+=`<tr><td${b} rowspan="${n}">${esc(tc.name)}<br>(${tc.kind})</td><td${b} colspan="7">맡은 수업 없음</td></tr>`;
+    tc.rows.forEach((r,i)=>{t+=`<tr>${i===0?`<td${b} rowspan="${n}">${esc(tc.name)}<br>(${tc.kind})</td>`:''}<td${b}>${r.g}</td><td${b}>${esc(r.s)}</td><td${b}>${r.k}반</td><td${b}>${r.x[0]}</td><td${b}>${r.x[1]}</td><td${b}>${r.w[0]}</td><td${b}>${r.w[1]}</td></tr>`});
+    t+=`<tr class="ptot"><td${b} colspan="5">합계 · 연평균 ${mixed(tc.avg)}시간 (범위 ${tc.range}) · 준비 수업 ${tc.units}개</td><td${b}>${tc.H[0]}</td><td${b}>${tc.H[1]}</td></tr>`;
+  });
+  t+='</tbody></table>';
+  let g=`<table${tb}><thead><tr><th${b}>학년</th>${X.subs.map(s=>`<th${b}>${esc(s)}</th>`).join('')}<th${b}>담임 1학기</th><th${b}>담임 2학기</th><th${b}>담임 연평균</th></tr></thead><tbody>`;
+  X.grid.forEach(r=>{g+=`<tr><td${b}>${r.name}</td>${r.cells.map(l=>`<td${b}>${l.length?l.map(esc).join('<br>'):'·'}</td>`).join('')}<td${b}>${n1(r.hr[0])}</td><td${b}>${n1(r.hr[1])}</td><td${b}><b>${n1(r.hr[2])}</b></td></tr>`});
+  g+='</tbody></table>';
+  return {t,g};
+}
+// 1) 인쇄 / PDF: 인쇄 전용 영역을 채우고 브라우저 인쇄 창을 엶
+function edPrintFill(){
+  const X=edExport(),{t,g}=edTablesHTML(X,false);
+  $('#printArea').innerHTML=`<h1>${esc(X.title)}</h1><p class="pmeta">${X.date} · 담임 평균 ${X.hrAvg}시간 · 판정: ${esc(X.verdict)}</p>
+    <h2>교사별</h2>${t}
+    <div class="pgrid"><h1>${esc(X.title)}</h1><h2>학년별 편성표</h2>${g}
+    ${X.hard.length||X.warn.length?`<h2>확인할 곳</h2><ul>${X.hard.concat(X.warn).map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`:''}</div>`;
+  document.body.classList.add('print-ed');
+}
+window.addEventListener('beforeprint',()=>{if(ED&&!$('#editor').hidden)edPrintFill();});
+window.addEventListener('afterprint',()=>document.body.classList.remove('print-ed'));
+// 2) 엑셀: SheetJS를 처음 누를 때만 불러와서 시트 3장(교사별·학년별 편성표·요약)으로 저장
+function loadXLSX(){
+  if(window.XLSX)return Promise.resolve();
+  return new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=ok;s.onerror=no;document.head.appendChild(s);});
+}
+async function edXlsx(){
+  const X=edExport();
+  try{await loadXLSX();}catch(e){edMsg='엑셀 도구를 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 눌러 주세요.';renderEdDerived();return;}
+  const t1=[['교사','구분','학년','과목','학급 수','1학기 반당','2학기 반당','1학기 주당','2학기 주당','연평균 주당','시수 범위','준비 수업']];
+  X.teachers.forEach(tc=>{
+    tc.rows.forEach(r=>t1.push([tc.name,tc.kind,r.g,r.s,r.k,r.x[0],r.x[1],r.w[0],r.w[1],'','','']));
+    t1.push([tc.name,tc.kind,'합계','','','','',tc.H[0],tc.H[1],tc.avg,tc.range,tc.units]);
+  });
+  const t2=[['학년',...X.subs,'담임 1학기','담임 2학기','담임 연평균']];
+  X.grid.forEach(r=>t2.push([r.name,...r.cells.map(l=>l.join(' / ')||'·'),+r.hr[0].toFixed(2),+r.hr[1].toFixed(2),+r.hr[2].toFixed(2)]));
+  const t3=[['제목',X.title],['만든 날',X.date],['담임 평균',X.hrAvg+'시간'],['판정',X.verdict],[],['확인할 곳'],...X.hard.concat(X.warn).map(w=>[w])];
+  const wb=XLSX.utils.book_new();
+  const s1=XLSX.utils.aoa_to_sheet(t1);s1['!cols']=[{wch:14},{wch:6},{wch:7},{wch:8},{wch:7},{wch:9},{wch:9},{wch:9},{wch:9},{wch:10},{wch:9},{wch:8}];
+  const s2=XLSX.utils.aoa_to_sheet(t2);s2['!cols']=[{wch:12},...X.subs.map(()=>({wch:30})),{wch:10},{wch:10},{wch:11}];
+  const s3=XLSX.utils.aoa_to_sheet(t3);s3['!cols']=[{wch:12},{wch:60}];
+  XLSX.utils.book_append_sheet(wb,s1,'교사별');XLSX.utils.book_append_sheet(wb,s2,'학년별 편성표');XLSX.utils.book_append_sheet(wb,s3,'요약');
+  XLSX.writeFile(wb,`전담배정_${ED.idx+1}안.xlsx`);
+  edMsg=`엑셀 파일(전담배정_${ED.idx+1}안.xlsx)을 내려받았습니다. 시트: 교사별, 학년별 편성표, 요약.`;renderEdDerived();
+}
+// 3) 표 복사: 한글·엑셀에 붙이면 표 모양 그대로 들어가도록 HTML과 일반 글자 두 가지로 복사
+async function edCopy(){
+  const X=edExport(),{t,g}=edTablesHTML(X,true);
+  const html=`<p><b>${esc(X.title)}</b> (${X.date}, 담임 평균 ${X.hrAvg}시간)</p><p><b>교사별</b></p>${t}<p><b>학년별 편성표</b></p>${g}`;
+  const tsv=[X.title,'','교사별',['교사','학년','과목','학급 수','1학기 반당','2학기 반당','1학기 주당','2학기 주당'].join('\t'),
+    ...X.teachers.flatMap(tc=>[...tc.rows.map(r=>[tc.name,r.g,r.s,r.k,r.x[0],r.x[1],r.w[0],r.w[1]].join('\t')),[tc.name,'합계','','','','',tc.H[0],tc.H[1]].join('\t')]),
+    '','학년별 편성표',['학년',...X.subs,'담임 1학기','담임 2학기','담임 연평균'].join('\t'),
+    ...X.grid.map(r=>[r.name,...r.cells.map(l=>l.join(' / ')||'·'),fmt1(r.hr[0]),fmt1(r.hr[1]),fmt1(r.hr[2])].join('\t'))].join('\n');
+  let ok=false;
+  try{
+    if(navigator.clipboard&&window.ClipboardItem){
+      await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([tsv],{type:'text/plain'})})]);ok=true;
+    }
+  }catch(e){}
+  if(!ok){
+    // 예전 방식: 화면 밖에 표를 만들어 선택한 뒤 복사
+    const d=document.createElement('div');d.contentEditable='true';d.innerHTML=html;d.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(d);
+    const r=document.createRange();r.selectNodeContents(d);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);
+    try{ok=document.execCommand('copy');}catch(e){}
+    sel.removeAllRanges();d.remove();
+  }
+  edMsg=ok?'두 표를 복사했습니다. 한글이나 엑셀에서 붙여 넣기(Ctrl+V)하면 표 모양 그대로 들어갑니다.':'복사하지 못했습니다. 브라우저가 복사를 막았을 수 있으니 엑셀로 내보내기를 써 주세요.';
+  renderEdDerived();
+}
+
 // 같은 학년·과목을 여러 줄(여러 교사)로 나눠 맡으면 같은 색으로 묶어 보여 줌
 const GROUP_COLORS=['var(--g1)','var(--g2)','var(--g3)','var(--g4)','var(--g5)','var(--g6)','var(--g7)','var(--g8)'];
 function edGroups(){
@@ -1394,6 +1532,9 @@ document.addEventListener('click',e=>{
     if(a==='edOpen'){openEditor(+b.dataset.i);return;}
     if(!ED)return;
     if(a==='edBack'){closeEditor();return;}
+    if(a==='edPrint'){edPrintFill();window.print();return;}
+    if(a==='edXlsx'){edXlsx();return;}
+    if(a==='edCopy'){edCopy();return;}
     if(a==='edReset'){ED.items=JSON.parse(ED.orig);edMsg='';renderEditor();return;}
     if(a==='edDel'){
       const d=ED.items.find(x=>x.id===+b.dataset.id);
