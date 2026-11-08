@@ -249,7 +249,7 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
       <li>같은 학년·같은 과목 학급은 계산상 똑같으므로 '5학년 과학 5학급' 같은 덩어리로 묶습니다.</li>
       <li>덩어리마다 전담에게 줄 시수(가능하면 과목은 0시간부터 전부까지)와 맡을 사람을 정합니다. 한 사람에게 통째로, 또는 두 사람에게 학급 단위로 나눠 줍니다.</li>
       <li>먼저 교사들의 시수 범위를 모두 지킬 수 있는 전담 시수 합계의 범위를 계산하고, 그 범위를 벗어나는 길은 더 보지 않고 되돌아갑니다(백트래킹).</li>
-      <li>끝까지 조건을 지킨 배정은 이 순서로 비교합니다. ① 같은 학년군(3·4, 5·6학년) 담임 시수가 같게 ② 전담 교사가 준비할 수업 수(1인 최대, 합계)가 적게 ③ 전담 교사끼리 시수가 고르게 ④ 학년별 담임 시수가 고르게 ⑤ 한 학년·과목을 나눠 맡는 곳이 적게 ⑥ 전담 시수가 목표(담임 평균 +1)에 가깝게 ⑦ 한 사람이 5개 이상 과목·학년으로 퍼지지 않게 ⑧ 희망을 많이 들어주게 ⑨ 같은 학기에 담임과 나눠 맡는 곳이 적게. 앞의 기준이 같을 때만 다음 기준을 봅니다.</li>
+      <li>끝까지 조건을 지킨 배정은 이 순서로 비교합니다. ① 학년 간 담임 시수 차이(가장 많은 학년 − 가장 적은 학년)가 작게 ② 같은 학년군(3·4, 5·6학년) 담임 시수가 같게 ③ 전담 교사가 준비할 수업 수(1인 최대, 합계)가 적게 ④ 전담 교사끼리 시수가 고르게 ⑤ 학년별 담임 시수가 평균에 가깝게 ⑥ 한 학년·과목을 나눠 맡는 곳이 적게 ⑦ 전담 시수가 자기 범위의 가운데에 가깝게 ⑧ 한 사람이 5개 이상 과목·학년으로 퍼지지 않게 ⑨ 희망을 많이 들어주게 ⑩ 같은 학기에 담임과 나눠 맡는 곳이 적게. 앞의 기준이 같을 때만 다음 기준을 봅니다.</li>
       <li>1·2학기 전담 시간은 과목마다 따로 정할 수 있습니다(예: 3·2시간). 단, 한 학기만 전담이 맡고 다른 학기는 담임이 맡는 배분(예: 3·0시간)은 한 교과·한 학급을 1년 내내 같은 교사가 맡지 않게 되므로 아예 뺍니다. 교사와 담임의 학기 간 차이는 4단계에서 정한 시간까지입니다(처음 값 4시간).</li>
       <li>점수가 좋은 안 중에서 교사별로 맡는 과목·학년·시수가 서로 많이 다른 안 5가지를 고릅니다.</li>
     </ol>
@@ -777,7 +777,8 @@ function makePlan(P,asg){
   // 한 사람이 과목·학년을 5개 이상으로 맡는 정도 (4개까지는 괜찮음)
   const extra4=per.reduce((a,q)=>a+Math.max(0,q.nS-4)+Math.max(0,q.nG-4),0);
   // 비교 순서대로 늘어놓은 값 (앞에서부터 작을수록 좋은 안)
-  const key=[handover,pairDiff,maxU,prepSum,spread,gradeDev,splits,dev,extra4,cut,partial];
+  // 학년 간 담임 시수 차이(가장 많은 학년 − 가장 적은 학년)가 맨 앞: 학년군 사이가 크게 벌어지는 안을 막음
+  const key=[handover,hrSpread,pairDiff,maxU,prepSum,spread,gradeDev,splits,dev,extra4,cut,partial];
   const score=key.reduce((a,v,i)=>a+v*Math.pow(10,(key.length-i)*2),0);   // 참고용 한 숫자
   const groups={};
   per.forEach((q,t)=>{const key=q.items.map(x=>C[x.i].sid+':'+C[x.i].g+':'+x.op.k).sort().join(',');(groups[T[t].group]=groups[T[t].group]||[]).push(key)});
@@ -887,7 +888,12 @@ function xCandidates(P,limit){
   const profiles=[];let steps=0;const pick=[];
   (function rec3(k,cost,J){
     if(++steps>2000000||profiles.length>200000)return;
-    if(k===seq.length){if(J>=B.jmin&&J<=B.jmax)profiles.push({cost,pick:pick.slice()});return;}
+    if(k===seq.length){
+      if(J<B.jmin||J>B.jmax)return;
+      // 학년 간 담임 시수 차이(연 평균)를 가장 크게 무게 줌
+      const vals=Object.values(H),sp=(Math.max(...vals)-Math.min(...vals))/2;
+      profiles.push({cost:cost+sp*1e8,pick:pick.slice()});return;
+    }
     const g=seq[k],[lo,hi]=allowed(g);
     for(const L of lv[gi[g]]){
       if(L.h<lo||L.h>hi)continue;
@@ -1048,7 +1054,7 @@ function renderResults(P,r,sec){
   const semText=S.rules.sem==='avg'?' 맡는 반은 1년 내내 같고, 시수는 두 학기 평균으로 맞췄습니다.':' 맡는 반은 1년 내내 같고, 1·2학기 시수가 같습니다.';
   const first=Math.min(5,r.picked.length),more=r.picked.length-first;
   let h=`<div class="res-head"><div class="res-title"><h2>배정안 ${first}가지${more?` <span class="muted" style="font-size:14px;font-weight:500">아래 더보기로 ${r.picked.length}가지까지</span>`:''}</h2>${semNote()}</div>
-    <p><b>안을 고르는 순서:</b> ① 같은 학년군 담임 시수 같게 ② 전담 준비 수업 수 적게 ③ 전담끼리 시수 고르게 ④ 학년별 담임 시수 고르게 ⑤ 나눠 맡는 곳 적게 ⑥ 전담 시수 목표에 가깝게 ⑦ 한 사람이 5개 이상 과목·학년으로 퍼지지 않게 ⑧ 희망 많이 들어주기 ⑨ 담임과 같은 학기에 나눠 맡는 곳 적게. 한 학기만 전담이 맡고 다른 학기는 담임이 맡는 배분은 아예 제외했습니다.</p>
+    <p><b>안을 고르는 순서:</b> ① 학년 간 담임 시수 차이 작게 ② 같은 학년군 담임 시수 같게 ③ 전담 준비 수업 수 적게 ④ 전담끼리 시수 고르게 ⑤ 학년별 담임 시수 평균에 가깝게 ⑥ 나눠 맡는 곳 적게 ⑦ 전담 시수 범위 가운데에 가깝게 ⑧ 한 사람이 5개 이상 과목·학년으로 퍼지지 않게 ⑨ 희망 많이 들어주기 ⑩ 담임과 같은 학기에 나눠 맡는 곳 적게. 한 학기만 전담이 맡고 다른 학기는 담임이 맡는 배분은 아예 제외했습니다.</p>
     <p>모든 안에서 교사마다 정한 시수 범위를 지킵니다.${P.order?' 담임 시수는 6학년 ≤ 5학년 ≤ 4학년 ≤ 3학년 ≤ 1학년 = 2학년을 지킵니다.':''} ${prepText}${semText} 서로 다른 배정 ${r.count.toLocaleString()}가지를 찾았고(${sec.toFixed(1)}초${r.stopped?', 도중에 멈춤':''}), 그중 점수가 좋으면서 서로 많이 다른 안을 골랐습니다.</p></div>`;
   const labels=labelsFor(r.picked);
   r.picked.slice(0,first).forEach((p,idx)=>{h+=planHTML(P,p,idx,labels[idx])});
