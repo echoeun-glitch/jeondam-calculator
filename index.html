@@ -1230,7 +1230,7 @@ function renderEdDerived(c){
   T.forEach((t,ti)=>{
     const q=c.per[ti],av=(q.H[0]+q.H[1])/2,out=av<t.lo||av>t.hi,gap=Math.abs(q.H[0]-q.H[1])>(S.rules.semGap|0);
     const el=$('#edT'+ti);if(!el)return;
-    el.innerHTML=`1학기 <b>${q.H[0]}</b> · 2학기 <b>${q.H[1]}</b> · 연평균 <b>${mixed(av)}</b>시간 (범위 ${t.lo}~${t.hi})${out?'<span class="chip-bad">범위 밖</span>':''}${gap?'<span class="chip-bad">학기 차이 큼</span>':''} · 준비 수업 <b>${q.units.size}</b>개 (${q.subs.size}과목·${q.grs.size}개 학년)`;
+    el.innerHTML=`연평균 <b style="font-size:15px">${mixed(av)}</b>시간 · 1학기 <b>${q.H[0]}</b> · 2학기 <b>${q.H[1]}</b> (범위 ${t.lo}~${t.hi})${out?'<span class="chip-bad">범위 밖</span>':''}${gap?'<span class="chip-bad">학기 차이 큼</span>':''} · 준비 수업 <b>${q.units.size}</b>개 (${q.subs.size}과목·${q.grs.size}개 학년)`;
   });
   // 수업 조각별 주당 시수, 과목 시수보다 많으면 빨갛게
   ED.items.forEach(it=>{
