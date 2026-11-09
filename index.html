@@ -115,6 +115,7 @@ button{font:inherit;cursor:pointer}
 .plan.pickable{cursor:pointer;transition:border-color .15s}
 .plan.pickable:hover{border-color:var(--accent)}
 .plan-top .edit-btn{margin-left:auto}
+.rule-note{grid-column:1/-1;margin:0;font-size:13px;color:var(--muted)}
 .edit-wrap{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
 .edit-wrap .edit-btn{margin-left:0;border-color:var(--info);color:var(--info);font-weight:600}
 .edit-tip{position:relative;background:var(--info);color:var(--info-ink);font-size:13px;font-weight:600;line-height:1.4;padding:6px 12px;border-radius:8px;white-space:nowrap}
@@ -318,6 +319,15 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
         <label class="toggle" for="rorder"><input type="checkbox" id="rorder" data-k="rorder"> 담임 시수 순서 지키기</label>
         <p>담임 시수가 <b>6학년 ≤ 5학년 ≤ 4학년 ≤ 3학년 ≤ 1학년 = 2학년</b>이 되는 안만 찾습니다. 3·4학년, 5·6학년도 담임 시수가 같은 안을 희망을 더 들어주는 안보다 우선합니다. 담임 시수는 연 단위(두 학기 평균)로 비교합니다.</p>
       </div>
+      <div class="rule">
+        <label class="toggle" for="rpairsub"><input type="checkbox" id="rpairsub" data-k="rpairsub"> 학년군은 같은 과목을 전담에게</label>
+        <p>1·2학년, 3·4학년, 5·6학년이 <b>같은 과목을 함께 전담</b>에게 주는 안을 가장 먼저 찾습니다. 예: 3학년 과학이 전담이면 4학년 과학도 전담. 두 학년에 모두 있는 과목만 봅니다. 학년군 협의와 준비가 편해지지만, 맞추지 못하는 곳이 남을 수 있습니다.</p>
+      </div>
+      <div class="rule">
+        <label class="toggle" for="rsamet"><input type="checkbox" id="rsamet" data-k="rsamet"> 같은 과목은 같은 선생님이</label>
+        <p>한 과목을 되도록 적은 수의 선생님이 맡는 안을 먼저 찾습니다. 예: 3·4학년 과학을 한 사람이. 과목 연구와 교구 관리가 편해집니다. 과목 시수가 한 사람의 시수 범위보다 많으면 여러 명이 나눠 맡을 수밖에 없습니다.</p>
+      </div>
+      <p class="rule-note">위 두 가지를 켜면, 그만큼 <b>전담 준비 부담(1인당 과목·학년 수)</b>은 뒤 순위로 밀립니다. 한 사람이 같은 과목을 여러 학년 맡게 되어 준비 수업 수가 늘 수 있습니다.</p>
     </div>
   </section>
 
@@ -374,7 +384,7 @@ function defaultState(){
     teachers:[jd('전담 가(부장)',19,22),jd('전담 나'),jd('전담 다'),jd('전담 라'),jd('전담 마'),jd('전담 바'),
       {id:newId('t'),name:'영어회화전문강사',type:'gs',subj:['s1'],gr:[0,0,1,1,0,0],red:0,lo:18,hi:22},
       {id:newId('t'),name:'보건교사',type:'bg',subj:['s6'],gr:[0,0,0,0,1,1],red:0,lo:0,hi:0}],
-    rules:{prep:'auto',share:2,sem:'avg',order:true,semGap:4}
+    rules:{prep:'auto',share:2,sem:'avg',order:true,semGap:4,pairSubj:false,sameT:false}
   };
 }
 function newId(p){return p+Math.random().toString(36).slice(2,9)}
@@ -387,7 +397,7 @@ function migrate(s){
   s.grades.forEach(g=>g.tot[1]=g.tot[0]);
   s.subjects.forEach(x=>{if(x.sem&&!/보건/.test(x.name||'')){x.sem=false;x.need=x.needS&&x.needS[0]||x.need;}if(!x.sem)x.h[1]=x.h[0].slice();else if(!x.needS)x.needS=[x.need,x.need]});
   s.rel=Object.assign({over:2},s.rel);
-  s.rules=Object.assign({prep:'auto',share:2,order:true,semGap:4},s.rules);
+  s.rules=Object.assign({prep:'auto',share:2,order:true,semGap:4,pairSubj:false,sameT:false},s.rules);
   // 예전에는 전담 교사 시수 범위가 하나(예: 21~24)였음 → 교사마다 '그 범위 − 부장 감경'으로 옮김
   if(!s.perRange){
     const r=s.range||{lo:21,hi:24};
@@ -475,6 +485,8 @@ function renderTeachers(){
 function renderRules(){
   $('#rprep').value=String(S.rules.prep);$('#rshare').value=String(S.rules.share);
   $('#rorder').checked=S.rules.order!==false;
+  $('#rpairsub').checked=!!S.rules.pairSubj;
+  $('#rsamet').checked=!!S.rules.sameT;
   $('#rgap').value=S.rules.semGap;
 }
 function renderAll(){renderGrades();renderSubjects();renderTeachers();renderRules();refreshDerived();}
@@ -538,6 +550,8 @@ function onField(e){
     case 'rshare':S.rules.share=num(el.value);break;
     case 'rsem':S.rules.sem=el.value;break;
     case 'rorder':S.rules.order=el.checked;break;
+    case 'rpairsub':S.rules.pairSubj=el.checked;break;
+    case 'rsamet':S.rules.sameT=el.checked;break;
     case 'rgap':S.rules.semGap=num(el.value);break;
   }
   save();refreshDerived();markStale();
@@ -669,7 +683,7 @@ function buildProblem(S){
       if(can<t.dlo[d])errors.push(`${t.name}: ${info[d].name?info[d].name+'에 ':''}맡을 수 있는 수업을 모두 합쳐도 ${fmt(can/w)}시간이라 최소 ${fmt(t.dlo[d]/w)}시간을 채울 수 없습니다.`);
     });
   });
-  return {chunks,T,errors,notes,dims,W,D,N,TA,band,bounds,over,info,split:sp,order:S.rules.order!==false,semAvg:sp,semGap:S.rules.semGap|0,
+  return {chunks,T,errors,notes,dims,W,D,N,TA,band,bounds,over,info,split:sp,order:S.rules.order!==false,pairSubj:!!S.rules.pairSubj,sameT:!!S.rules.sameT,semAvg:sp,semGap:S.rules.semGap|0,
     hrRange:S.grades.map(g=>g.c>0&&g.hr?g.hr.slice():null)};
 }
 
@@ -702,6 +716,17 @@ function pairGap(a,b,P){            // a,b = [1학기, 2학기] 담임 시수
   if(P.semAvg)return Math.abs((a[0]+a[1])/2-(b[0]+b[1])/2);
   const ss=P.split?[0,1]:[0];
   return ss.reduce((t,s)=>t+Math.abs(a[s]-b[s]),0)/ss.length;
+}
+/* 학년군(1·2, 3·4, 5·6)이 같은 과목을 전담에게 주는지: 두 학년 모두 있는 과목 중 한쪽만 전담인 곳의 수
+   given[g] = {과목id: 전담에게 줬는지} (그 학년에 있는 과목만) */
+function pairSubjMiss(given){
+  let n=0;
+  for(const g of [0,2,4]){
+    const a=given[g],b=given[g+1];if(!a||!b)continue;
+    if(!(S.grades[g].c>0&&S.grades[g+1].c>0))continue;
+    for(const sid in a)if(sid in b&&a[sid]!==b[sid])n++;
+  }
+  return n;
 }
 function hrOrderOK(hr,P){            // hr[학기][학년]
   for(const row of hrRows(hr,P)){
@@ -882,13 +907,19 @@ function makePlan(P,asg){
   const extra4=per.reduce((a,q)=>a+Math.max(0,q.nS-4)+Math.max(0,q.nG-4),0);
   // 비교 순서대로 늘어놓은 값 (앞에서부터 작을수록 좋은 안)
   // 학년 간 담임 시수 차이(가장 많은 학년 − 가장 적은 학년)가 맨 앞: 학년군 사이가 크게 벌어지는 안을 막음
-  const key=[handover,hrSpread,pairDiff,maxU,prepSum,spread,gradeDev,splits,dev,extra4,cut,partial];
+  const given={};asg.forEach((o,i)=>{const ch=C[i];(given[ch.g]=given[ch.g]||{})[ch.sid]=o.op.sum>0});
+  const pairMiss=pairSubjMiss(given);
+  // 같은 과목을 맡는 교사 수: 과목마다 (교사 수 − 1)을 더함
+  const subjT={};asg.forEach((o,i)=>{if(!(o.op.sum>0))return;const sid=C[i].sid;o.p.forEach(([t])=>{if(!T[t].free)(subjT[sid]=subjT[sid]||new Set()).add(t)})});
+  const sameTMiss=Object.values(subjT).reduce((a,st)=>a+st.size-1,0);
+  const subjTCount=Object.fromEntries(Object.entries(subjT).map(([k,v])=>[k,v.size]));
+  const key=[handover,P.pairSubj?pairMiss:0,hrSpread,pairDiff,P.sameT?sameTMiss:0,maxU,prepSum,spread,gradeDev,splits,dev,extra4,cut,partial];
   const score=key.reduce((a,v,i)=>a+v*Math.pow(10,(key.length-i)*2),0);   // 참고용 한 숫자
   const groups={};
   per.forEach((q,t)=>{const key=q.items.map(x=>C[x.i].sid+':'+C[x.i].g+':'+x.op.k).sort().join(',');(groups[T[t].group]=groups[T[t].group]||[]).push(key)});
   Object.values(groups).forEach(a=>a.sort());
   const sig=Object.keys(groups).sort((a,b)=>a-b).map(g=>g+'='+groups[g].join('|')).join(';')+'#'+asg.map(o=>o.op.k).join('|');
-  return {asg,per,score,splits,spread,maxU,prep,extra,cut,partial,hrSpread,pairDiff,loA,hiA,J,want,hrAvg,sig,groups,hrKey,handover,prepSum,key};
+  return {asg,per,score,splits,spread,maxU,prep,extra,cut,partial,hrSpread,pairDiff,pairMiss,sameTMiss,subjTCount,loA,hiA,J,want,hrAvg,sig,groups,hrKey,handover,prepSum,key};
 }
 function dist(a,b){
   let d=0;
@@ -938,6 +969,11 @@ function xCandidates(P,limit){
   const gs=Object.keys(byG).map(Number);
   const ss=P.split?[0,1]:[0];
   const Amid=[0,1].map(s=>{const f=P.info[P.D===2?s:0];return f&&f.band?(f.amin+f.amax)/2:0});
+  // 학년 g의 배분 c에서 과목별로 전담에게 줬는지
+  const givenOf=(g,c)=>{const m={};byG[g].forEach((i,q)=>{m[C[i].sid]=c.xv[q].sum>0});return m};
+  const xMiss=(g,c,h,d)=>{const a=givenOf(g,c),b=givenOf(h,d);let n=0;for(const k in a)if(k in b&&a[k]!==b[k])n++;return n};
+  const choiceMiss=(pick,choice)=>{const gv={};pick.forEach((q,j)=>gv[q.g]=givenOf(q.g,choice[j]));return pairSubjMiss(gv)};
+  const PS_W=1e10;                     // 학년군 같은 과목: 학년 간 담임 시수 차이(1e8)보다 앞
   const lists=gs.map(g=>{
     const idx=byG[g],res=[],xv=[];
     (function rec(j){
@@ -1012,7 +1048,10 @@ function xCandidates(P,limit){
       const nJ=J+L.J;
       if(ok&&nJ+rMin<=B.jmax&&nJ+rMax>=B.jmin){
         const mate=PAIR[g],pen=(mate in H&&mate!==g&&(mate in H))?Math.abs(L.h-H[mate])/2*PAIR_W:0;
-        pick.push({g,L});rec3(k+1,cost+L.best+pen,nJ);pick.pop();
+        // 학년군 짝 학년이 이미 정해졌으면, 이 단계 안에서 과목이 맞는 배분을 고름
+        let o=L.opts[0],oc=L.best;
+        if(P.pairSubj){const mp=pick.find(q=>q.g===mate&&mate!==g);if(mp){let best=Infinity;for(const c of L.opts){const v=PS_W*xMiss(g,c,mate,mp.o)+c.cost;if(v<best){best=v;o=c;}}oc=best;}}
+        pick.push({g,L,o});rec3(k+1,cost+oc+pen,nJ);pick.pop();
       }
       delete H[g];
     }
@@ -1023,9 +1062,11 @@ function xCandidates(P,limit){
   const out=[];
   for(const pf of profiles){
     if(out.length>=limit*3)break;
-    const base=pf.pick.map(p=>p.L.opts[0]);
+    const base=pf.pick.map(p=>p.o);
     out.push({cost:pf.cost,choice:base,pf});
-    pf.pick.forEach((p,j)=>p.L.opts.slice(1).forEach(o=>{const c=base.slice();c[j]=o;out.push({cost:pf.cost+o.cost-p.L.best,choice:c,pf});}));
+    pf.pick.forEach((p,j)=>p.L.opts.forEach(o=>{if(o===p.o)return;const c=base.slice();c[j]=o;
+      const extra=P.pairSubj?PS_W*(choiceMiss(pf.pick,c)-choiceMiss(pf.pick,base)):0;
+      out.push({cost:pf.cost+o.cost-p.o.cost+extra,choice:c,pf});}));
   }
   out.sort((a,b)=>a.cost-b.cost);
   return out.slice(0,limit).map(o=>{const x=new Array(C.length);o.choice.forEach((c,j)=>byG[o.pf.pick[j].g].forEach((i,q)=>x[i]=c.xv[q]));return x});
@@ -1043,7 +1084,7 @@ const tick=()=>new Promise(r=>{if(document.hidden){mcQ.push(r);mc.port2.postMess
 let stopAsked=false;
 async function findPlans(P,rules,onProgress){
   const share=rules.share,pool=new Map(),auto=rules.prep==='auto';
-  const cap=auto?5:rules.prep;
+  const cap=auto?(rules.sameT?6:5):rules.prep;
   const merge=m=>m.forEach((v,k)=>{const o=pool.get(k);if(!o||cmpPlan(v,o)<0)pool.set(k,v)});
   const t0=performance.now(),el=()=>performance.now()-t0;
   let lastYield=performance.now();
@@ -1073,7 +1114,7 @@ async function findPlans(P,rules,onProgress){
   // (다) 찾은 안 중 가장 낮은 준비 부담을 한도로 삼고, 남은 시간 동안 살아남은 후보를 돌아가며 깊이 찾음
   const Lstar=auto?Math.min(...[...pool.values()].map(p=>p.maxU)):cap;
   // 자동이면 찾은 가장 낮은 한도부터 4개(사용자가 괜찮다고 한 값)까지 비교. 학년군 같게가 준비 수 적게보다 앞서므로
-  const Ls=auto?[Lstar,Math.max(Lstar+1,4)]:[Lstar];
+  const Ls=auto?[...new Set([Lstar,Math.max(Lstar+1,4)].concat(rules.sameT?[Math.max(Lstar,6)]:[]))]:[Lstar];
   const jobs=[];
   Ls.forEach((L,li)=>{feas.forEach(v=>jobs.push({v,L,w:li?0.4:0.6}));jobs.push({v:P,L,w:li?0.4:0.6,mixed:true});});
   const done=new Set();let round=0;
@@ -1088,7 +1129,7 @@ async function findPlans(P,rules,onProgress){
     round++;
   }
   const all=[...pool.values()].filter(p=>p.maxU<=Ls[Ls.length-1]).sort(cmpPlan);
-  return {Lstar,auto,share,count:all.length,picked:pickDiverse(all,10),stopped:stopAsked};
+  return {Lstar,Lmax:Ls[Ls.length-1],auto,share,count:all.length,picked:pickDiverse(all,10),stopped:stopAsked};
 }
 
 /* ---------- 결과 보여주기 ---------- */
@@ -1112,6 +1153,13 @@ async function run(){
   btn.disabled=false;btn.textContent='배정안 찾기';
   lastShown=true;
 }
+// 안을 고르는 순서 (켠 우선순위는 굵게)
+function orderText(P){
+  const it=[[P.pairSubj,'학년군(1·2, 3·4, 5·6)은 같은 과목을 전담에게',1],[1,'학년 간 담임 시수 차이 작게'],[1,'같은 학년군 담임 시수 같게'],
+    [P.sameT,'같은 과목은 같은 선생님이',1],[1,'전담 준비 수업 수 적게'],[1,'전담끼리 시수 고르게'],[1,'학년별 담임 시수 평균에 가깝게'],[1,'나눠 맡는 곳 적게'],
+    [1,'전담 시수 범위 가운데에 가깝게'],[1,'한 사람이 5개 이상 과목·학년으로 퍼지지 않게'],[1,'희망 많이 들어주기'],[1,'담임과 같은 학기에 나눠 맡는 곳 적게']].filter(x=>x[0]);
+  return it.map((x,i)=>{const t='①②③④⑤⑥⑦⑧⑨⑩⑪⑫'[i]+' '+x[1];return x[2]?`<b>${t}</b>`:t}).join(' ');
+}
 function labelsFor(picked){
   const labels=picked.map(()=>[]);
   const tagMin=(f,text)=>{
@@ -1126,6 +1174,8 @@ function labelsFor(picked){
   tagMin(p=>p.spread,'전담끼리 시수가 가장 고름');
   tagMin(p=>p.maxU*100+p.prep,'준비 부담이 가장 적음');
   tagMin(p=>p.splits,'나눠 맡는 곳이 가장 적음');
+  if(S.rules.pairSubj)tagMin(p=>p.pairMiss,'학년군 과목이 가장 잘 맞음');
+  if(S.rules.sameT)tagMin(p=>p.sameTMiss,'같은 과목 선생님이 가장 적음');
   return labels;
 }
 // 배정안 제목 옆 안내: 두 학기 평균(기본) ↔ 두 학기 모두
@@ -1153,13 +1203,13 @@ function renderResults(P,r,sec){
   }
   const L=r.Lstar;
   const prepText=r.auto
-    ?`준비 수업은 1인당 과목·학년 조합 ${Math.max(L+1,4)}개까지 허용해 비교했습니다(찾은 안 중 가장 낮은 값은 ${L}개).`
+    ?`준비 수업은 1인당 과목·학년 조합 ${r.Lmax||Math.max(L+1,4)}개까지 허용해 비교했습니다(찾은 안 중 가장 낮은 값은 ${L}개).`
     :`준비 부담 한도는 1인당 과목·학년 조합 ${L}개입니다.`;
   const semText=S.rules.sem==='avg'?' 맡는 반은 1년 내내 같고, 시수는 두 학기 평균으로 맞췄습니다.':(S.subjects.some(x=>x.sem)?' 맡는 반은 1년 내내 같고, 학기별 과목을 뺀 과목은 1·2학기 시수가 같습니다.':' 맡는 반은 1년 내내 같고, 1·2학기 시수가 같습니다.');
   const first=Math.min(5,r.picked.length),more=r.picked.length-first;
   let h=`<div class="res-head"><div class="res-title"><h2>배정안 ${first}가지${more?` <span class="muted" style="font-size:14px;font-weight:500">아래 더보기로 ${r.picked.length}가지까지</span>`:''}</h2>${semNote()}</div>
     ${S.subjects.some(x=>x.sem)?`<p><b>학기별 과목:</b> ${S.subjects.filter(x=>x.sem).map(x=>esc(x.name)).join(', ')}. 한 학기에만 있는 과목은 그 학기만 맡습니다. 교사·담임의 1·2학기 시수 차이는 ${S.rules.semGap}시간까지로 맞췄습니다${S.teachers.some(isBG)?' (보건교사는 제외)':''}.</p>`:''}
-    <p><b>안을 고르는 순서:</b> ① 학년 간 담임 시수 차이 작게 ② 같은 학년군 담임 시수 같게 ③ 전담 준비 수업 수 적게 ④ 전담끼리 시수 고르게 ⑤ 학년별 담임 시수 평균에 가깝게 ⑥ 나눠 맡는 곳 적게 ⑦ 전담 시수 범위 가운데에 가깝게 ⑧ 한 사람이 5개 이상 과목·학년으로 퍼지지 않게 ⑨ 희망 많이 들어주기 ⑩ 담임과 같은 학기에 나눠 맡는 곳 적게. 한 학기만 전담이 맡고 다른 학기는 담임이 맡는 배분은 아예 제외했습니다.</p>
+    <p><b>안을 고르는 순서:</b> ${orderText(P)}. 한 학기만 전담이 맡고 다른 학기는 담임이 맡는 배분은 아예 제외했습니다.</p>
     <p>모든 안에서 교사마다 정한 시수 범위를 지킵니다.${P.order?' 담임 시수는 6학년 ≤ 5학년 ≤ 4학년 ≤ 3학년 ≤ 1학년 = 2학년을 지킵니다.':''} ${prepText}${semText} 서로 다른 배정 ${r.count.toLocaleString()}가지를 찾았고(${sec.toFixed(1)}초${r.stopped?', 도중에 멈춤':''}), 그중 점수가 좋으면서 서로 많이 다른 안을 골랐습니다.</p></div>`;
   const labels=labelsFor(r.picked);
   r.picked.slice(0,first).forEach((p,idx)=>{h+=planHTML(P,p,idx,labels[idx])});
@@ -1180,7 +1230,7 @@ function planHTML(P,p,idx,labels){
   const rangeTxt=sp?`1학기 <b>${p.loA[0]}~${p.hiA[0]}</b> · 2학기 <b>${p.loA[1]}~${p.hiA[1]}</b>시간`:`<b>${p.loA[0]}~${p.hiA[0]}</b>시간`;
   const gave=sp&&p.J[0]!==p.J[1]?`${p.J[0]} / ${p.J[1]}`:p.J[0],wantT=sp&&p.want[0]!==p.want[1]?`${p.want[0]} / ${p.want[1]}`:p.want[0];
   let h=`<article class="plan pickable" data-plan="${idx}" title="눌러서 이 안을 선택하고 미세 조정"><div class="plan-top"><span class="plan-no">${idx+1}안</span>${labels.map(l=>`<span class="tag">${l}</span>`).join('')}<span class="edit-wrap"><button class="btn edit-btn" data-act="edOpen" data-i="${idx}">선택 및 미세 조정</button><span class="edit-tip" role="note">학기별 조정을 할 수 있습니다.</span></span></div>
-    <div class="stats"><span>담임 <b>${hrSummary(p)}</b></span><span>담임 평균 <b>${pair(p.hrAvg[0].toFixed(1),p.hrAvg[s1].toFixed(1))}</b>시간 (학년 간 차이 최대 <b>${mixed(p.hrSpread)}</b>시간${P.semAvg?', 연 평균':''})</span><span>같은 학년군 담임 시수 차이 <b>${mixed(p.pairDiff)}</b>시간</span><span>전담·강사 시수 ${rangeTxt}</span><span>희망 <b>${wantT}</b>시간 중 <b>${gave}</b>시간을 전담이 맡음</span><span>준비 수업 1인 최대 <b>${p.maxU}</b>개 · 합계 <b>${p.prepSum}</b>개</span>${p.handover?`<span style="color:var(--bad)">학기 중 교사가 바뀌는 학년·과목 <b>${p.handover}</b>곳</span>`:''}<span>나눠 맡는 곳 <b>${p.splits}</b>곳</span></div>`;
+    <div class="stats"><span>담임 <b>${hrSummary(p)}</b></span><span>담임 평균 <b>${pair(p.hrAvg[0].toFixed(1),p.hrAvg[s1].toFixed(1))}</b>시간 (학년 간 차이 최대 <b>${mixed(p.hrSpread)}</b>시간${P.semAvg?', 연 평균':''})</span><span>같은 학년군 담임 시수 차이 <b>${mixed(p.pairDiff)}</b>시간</span><span>전담·강사 시수 ${rangeTxt}</span><span>희망 <b>${wantT}</b>시간 중 <b>${gave}</b>시간을 전담이 맡음</span><span>준비 수업 1인 최대 <b>${p.maxU}</b>개 · 합계 <b>${p.prepSum}</b>개</span>${p.handover?`<span style="color:var(--bad)">학기 중 교사가 바뀌는 학년·과목 <b>${p.handover}</b>곳</span>`:''}<span>나눠 맡는 곳 <b>${p.splits}</b>곳</span>${P.pairSubj?`<span${p.pairMiss?' style="color:var(--bad)"':''}>학년군 과목이 ${p.pairMiss?`안 맞는 곳 <b>${p.pairMiss}</b>곳`:'<b>모두 맞음</b>'}</span>`:''}${P.sameT?`<span>과목별 선생님 수 ${S.subjects.filter(x=>p.subjTCount[x.id]).map(x=>`${esc(x.name)} <b>${p.subjTCount[x.id]}</b>`).join(' · ')}</span>`:''}</div>`;
   // 교사별
   h+=`<h3>교사별로 보기</h3><div class="tbl"><table><thead><tr><th>교사</th><th>맡는 수업</th><th>주당 시수 (연평균)</th><th>준비</th></tr></thead><tbody>`;
   p.per.forEach((q,t)=>{
@@ -1313,6 +1363,17 @@ function edCalc(){
     let prev=null;
     for(const g of ORDER){if(yr[g]==null)continue;if(prev!=null&&yr[prev]>yr[g]+1e-9)warn.push(`담임 시수 순서: ${prev+1}학년(${fmt1(yr[prev])})이 ${g+1}학년(${fmt1(yr[g])})보다 많습니다.`);prev=g;}
     if(yr[0]!=null&&yr[1]!=null&&Math.abs(yr[0]-yr[1])>1e-9)warn.push(`담임 시수: 1학년(${fmt1(yr[0])})과 2학년(${fmt1(yr[1])})이 같지 않습니다.`);
+  }
+  if(S.rules.pairSubj){
+    // 학년군에서 한 학년만 전담에게 준 과목 (두 학년 모두 그 과목이 있을 때)
+    for(const g of [0,2,4]){
+      if(!(S.grades[g].c>0&&S.grades[g+1].c>0))continue;
+      S.subjects.forEach(sb=>{
+        const has=x=>hOf(sb.id,x,0)+hOf(sb.id,x,1)>0;if(!has(g)||!has(g+1))return;
+        const jd=x=>ED.items.some(it=>it.g===x&&it.sid===sb.id&&it.k>0&&it.x[0]+it.x[1]>0);
+        if(jd(g)!==jd(g+1))warn.push(`학년군 과목: ${jd(g)?g+1:g+2}학년 ${sb.name}만 전담이 맡고 ${jd(g)?g+2:g+1}학년 ${sb.name}은 담임이 맡습니다.`);
+      });
+    }
   }
   S.grades.forEach((G,g)=>{if(G.hr&&yr[g]!=null&&(yr[g]<G.hr[0]-1e-9||yr[g]>G.hr[1]+1e-9))warn.push(`${g+1}학년 담임 시수 ${fmt1(yr[g])}시간이 정한 범위(${G.hr[0]}~${G.hr[1]}) 밖입니다.`)});
   return {T,per,cell,hr,yr,warn,hard};
