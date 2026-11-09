@@ -680,7 +680,7 @@ function buildProblem(S){
     dims.forEach((w,d)=>{
       if(!band[d])return;
       const can=chunks.reduce((a,ch,i)=>a+(t.elig[i]?ch.c*ch.opts[0].dp[d]:0),0);
-      if(can<t.dlo[d])errors.push(`${t.name}: ${info[d].name?info[d].name+'에 ':''}맡을 수 있는 수업을 모두 합쳐도 ${fmt(can/w)}시간이라 최소 ${fmt(t.dlo[d]/w)}시간을 채울 수 없습니다.`);
+      if(can<t.dlo[d])errors.push(`${t.name}: ${info[d].name?info[d].name+'에 ':''}맡을 수 있는 수업을 모두 합쳐도 ${fmt(can/W[d])}시간이라 최소 ${fmt(t.dlo[d]/W[d])}시간을 채울 수 없습니다.`);
     });
   });
   return {chunks,T,errors,notes,dims,W,D,N,TA,band,bounds,over,info,split:sp,order:S.rules.order!==false,pairSubj:!!S.rules.pairSubj,sameT:!!S.rules.sameT,semAvg:sp,semGap:S.rules.semGap|0,
