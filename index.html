@@ -21,6 +21,7 @@ img{max-width:100%}
   --accent:#2b6956; --accent-ink:#ffffff; --accent-soft:#e1eee8;
   --mark:#f4df85; --mark-ink:#473a00;
   --bad:#ad3f2a; --bad-soft:#f8e5df; --ok:#2e7744; --ok-soft:#e0f0e4;
+  --info:#2563c9; --info-ink:#ffffff;
   /* 나눠 맡는 학년·과목 묶음 색 (밝은·어두운 화면 모두에서 보이는 중간 밝기) */
   --ico-pdf:#d93a2b; --ico-xls:#1f7a45; --ico-hwp:#2d6fd6;
   --g1:#e07a5f; --g2:#3d85c6; --g3:#6aa84f; --g4:#e6a817; --g5:#9b5de5; --g6:#e05ca6; --g7:#1fa3a3; --g8:#8d6e63;
@@ -32,12 +33,12 @@ img{max-width:100%}
   --paper:#111714; --sheet:#19211d; --ink:#e2e9e4; --muted:#9aa79f; --line:#2d3933;
   --accent:#7cc2a8; --accent-ink:#0e1914; --accent-soft:#1e3128;
   --mark:#57491a; --mark-ink:#f6e6a2;
-  --bad:#ee8f7a; --bad-soft:#3a1f19; --ok:#86cd9a; --ok-soft:#1a2f21; color-scheme:dark}}
+  --bad:#ee8f7a; --bad-soft:#3a1f19; --ok:#86cd9a; --ok-soft:#1a2f21; --info:#5b9cf0; --info-ink:#0b1626; color-scheme:dark}}
 :root[data-theme="dark"]{
   --paper:#111714; --sheet:#19211d; --ink:#e2e9e4; --muted:#9aa79f; --line:#2d3933;
   --accent:#7cc2a8; --accent-ink:#0e1914; --accent-soft:#1e3128;
   --mark:#57491a; --mark-ink:#f6e6a2;
-  --bad:#ee8f7a; --bad-soft:#3a1f19; --ok:#86cd9a; --ok-soft:#1a2f21; color-scheme:dark}
+  --bad:#ee8f7a; --bad-soft:#3a1f19; --ok:#86cd9a; --ok-soft:#1a2f21; --info:#5b9cf0; --info-ink:#0b1626; color-scheme:dark}
 
 body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
 .wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px;display:flex;flex-direction:column;gap:36px}
@@ -62,6 +63,10 @@ tbody th{font-weight:600;white-space:nowrap}
 td.num{text-align:right;white-space:nowrap}
 tr.sem1 td,tr.sem1 th{border-bottom-style:dashed}
 .semlbl{font-size:12px;color:var(--muted);white-space:nowrap}
+.semtog{display:flex;align-items:center;gap:4px;margin-top:6px;font-size:12px;color:var(--muted);white-space:nowrap;cursor:pointer}
+.semtog input{width:auto;margin:0}
+.kind.bg{background:var(--ok-soft);color:var(--ok)}
+.norange{font-size:12px;color:var(--muted)}
 input[type=number],input[type=text],select{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
 input[type=number]{width:4.2em;text-align:right}
 input[type=text]{width:9em}
@@ -110,6 +115,15 @@ button{font:inherit;cursor:pointer}
 .plan.pickable{cursor:pointer;transition:border-color .15s}
 .plan.pickable:hover{border-color:var(--accent)}
 .plan-top .edit-btn{margin-left:auto}
+.edit-wrap{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.edit-wrap .edit-btn{margin-left:0;border-color:var(--info);color:var(--info);font-weight:600}
+.edit-tip{position:relative;background:var(--info);color:var(--info-ink);font-size:13px;font-weight:600;line-height:1.4;padding:6px 12px;border-radius:8px;white-space:nowrap}
+.edit-tip::before{content:"";position:absolute;top:-6px;right:24px;border:6px solid transparent;border-top:0;border-bottom-color:var(--info)}
+@media (prefers-reduced-motion:no-preference){
+  .edit-wrap .edit-btn{animation:editGlow 1.6s ease-in-out infinite}
+  @keyframes editGlow{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--info) 55%,transparent)}50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--info) 0%,transparent);background:color-mix(in srgb,var(--info) 14%,var(--sheet))}}
+}
+@media (prefers-reduced-motion:reduce){.edit-wrap .edit-btn{box-shadow:0 0 0 3px color-mix(in srgb,var(--info) 35%,transparent)}}
 /* 미세 조정 화면 */
 .ed-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
 .ed-sum{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--muted);background:var(--sheet);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
@@ -208,6 +222,32 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
 .bar span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
 @media (max-width:560px){.plan{padding:12px}}
 @media (prefers-reduced-motion:no-preference){.plan{animation:rise .25s ease-out both}@keyframes rise{from{transform:translateY(6px)}to{transform:none}}}
+
+/* ---------- 미세 조정 사용법 (단계별 안내) ---------- */
+.tour-btn{border-color:var(--accent);color:var(--accent);font-weight:600}
+/* 미세 조정에 들어오면: 화면을 살짝 어둡게 하고 '사용법 보기'만 밝게 반짝임 */
+.tour-spot.soft{box-shadow:0 0 0 3px var(--info),0 0 0 9999px rgba(10,20,16,.32)}
+.tour-tip.intro{width:auto;max-width:min(300px,calc(100vw - 32px));background:var(--info);color:var(--info-ink);border-color:var(--info);padding:10px 14px}
+.tour-tip.intro::before{content:"";position:absolute;top:-6px;left:22px;border:6px solid transparent;border-top:0;border-bottom-color:var(--info)}
+.tour-tip.intro p{margin:0;font-weight:600}
+.tour-tip.intro .later{background:none;border:0;padding:0;margin-top:6px;color:inherit;opacity:.85;text-decoration:underline;cursor:pointer;font:inherit;font-size:12px}
+.tour-btn.pulse{position:relative;z-index:62;background:var(--sheet)}
+@media (prefers-reduced-motion:no-preference){
+  .tour-btn.pulse{animation:tourPulse 1.2s ease-in-out infinite}
+  @keyframes tourPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--info) 70%,transparent)}50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--info) 0%,transparent);background:color-mix(in srgb,var(--info) 18%,var(--sheet))}}
+}
+.tour-spot{position:fixed;z-index:60;border-radius:8px;pointer-events:none;box-shadow:0 0 0 3px var(--mark),0 0 0 9999px rgba(10,20,16,.5);transition:all .2s ease}
+.tour-spot.none{box-shadow:0 0 0 9999px rgba(10,20,16,.5);width:0;height:0}
+.tour-tip{position:fixed;z-index:61;box-sizing:border-box;width:min(360px,calc(100vw - 32px));background:var(--sheet);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:14px;line-height:1.6}
+.tour-tip .tstep{font-family:var(--f-num);font-size:12px;color:var(--muted)}
+.tour-tip h4{margin:2px 0 6px;font-size:16px;text-wrap:balance}
+.tour-tip p{margin:0 0 6px}
+.tour-tip .try{background:var(--accent-soft);color:var(--ink);border-radius:6px;padding:6px 10px;font-size:13px;margin:8px 0 0}
+.tour-tip .try.done{background:var(--ok-soft);color:var(--ok);font-weight:600}
+.tour-tip .tbtns{display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:12px}
+.tour-tip .tbtns .skip{margin-right:auto;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:13px;padding:4px}
+.tour-tip .tbtns .go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.tour-spot{transition:none}}
 </style>
 </head>
 <body>
@@ -227,7 +267,7 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
 
   <section class="step-sec">
     <h2><span class="step">2</span>전담 희망 과목과 주당 시수</h2>
-    <p class="help">학년마다 그 과목의 주당 시수를 넣으세요. 전담과 관계없는 학년은 0으로 둡니다. <b>꼭 전담</b>은 그 시수를 모두 전담이 맡고, <b>가능하면</b>은 계산기가 0시간부터 전부까지 중에서 가장 알맞은 만큼만 전담에게 줍니다. 남는 시간은 담임이 맡습니다. 같은 학년은 모든 반이 같은 시수로 정해집니다.</p>
+    <p class="help">학년마다 그 과목의 주당 시수를 넣으세요. 전담과 관계없는 학년은 0으로 둡니다. <b>보건</b>은 <b>학기별로 다르게</b>를 체크하고 1학기·2학기 줄에 따로 넣으세요(예: 5학년 보건 1학기 0, 2학기 1). 연간 시수는 주당으로 바꿔 넣습니다(한 학기 17시간 ≈ 주당 1시간).</p>
     <div class="tbl"><table id="subjTable"></table></div>
     <div class="btn-row"><button class="btn" data-act="addSubj">과목 추가</button></div>
   </section>
@@ -236,11 +276,12 @@ details ol{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
     <h2><span class="step">3</span>전담 교사와 강사</h2>
     <div class="settings">
     </div>
-    <p class="help">교사마다 맡을 수 있는 과목·학년과 주당 시수 범위를 정합니다. 계산기는 이 범위만 지킵니다. 예: 부장 18~20시간, 다른 전담 21~24시간.</p>
+    <p class="help">교사마다 맡을 수 있는 과목·학년과 주당 시수 범위를 정합니다. 계산기는 이 범위만 지킵니다. 예: 부장 18~20시간, 다른 전담 21~24시간. <b>보건교사</b>는 시수 범위와 학기 간 차이를 따지지 않고, 체크한 과목·학년만 맡습니다.</p>
     <div class="tbl"><table id="teacherTable"></table></div>
     <div class="btn-row">
       <button class="btn" data-act="addJd">전담 교사 추가</button>
       <button class="btn" data-act="addGs">강사 추가</button>
+      <button class="btn" data-act="addBg">보건교사 추가</button>
       <button class="btn" data-act="reset">예시로 되돌리기</button>
     </div>
   </section>
@@ -327,10 +368,12 @@ function defaultState(){
       {id:'s2',name:'과학',need:'want',h:same([0,0,3,3,3,3])},
       {id:'s3',name:'체육',need:'want',h:same([0,0,3,3,3,3])},
       {id:'s4',name:'음악',need:'want',h:same([0,0,2,2,2,2])},
-      {id:'s5',name:'놀이',need:'want',h:same([2,2,0,0,0,0])}
+      {id:'s5',name:'놀이',need:'want',h:same([2,2,0,0,0,0])},
+      {id:'s6',name:'보건',need:'must',needS:['must','must'],sem:true,h:[[0,0,0,0,0,0],[0,0,0,0,1,0]]}
     ],
     teachers:[jd('전담 가(부장)',19,22),jd('전담 나'),jd('전담 다'),jd('전담 라'),jd('전담 마'),jd('전담 바'),
-      {id:newId('t'),name:'영어회화전문강사',type:'gs',subj:['s1'],gr:[0,0,1,1,0,0],red:0,lo:18,hi:22}],
+      {id:newId('t'),name:'영어회화전문강사',type:'gs',subj:['s1'],gr:[0,0,1,1,0,0],red:0,lo:18,hi:22},
+      {id:newId('t'),name:'보건교사',type:'bg',subj:['s6'],gr:[0,0,0,0,1,1],red:0,lo:0,hi:0}],
     rules:{prep:'auto',share:2,sem:'avg',order:true,semGap:4}
   };
 }
@@ -342,7 +385,7 @@ function migrate(s){
   // 학기별 입력은 없앰: 입력은 한 번, 계산 안에서만 두 학기로 다룸
   s.split=true;
   s.grades.forEach(g=>g.tot[1]=g.tot[0]);
-  s.subjects.forEach(x=>x.h[1]=x.h[0].slice());
+  s.subjects.forEach(x=>{if(x.sem&&!/보건/.test(x.name||'')){x.sem=false;x.need=x.needS&&x.needS[0]||x.need;}if(!x.sem)x.h[1]=x.h[0].slice();else if(!x.needS)x.needS=[x.need,x.need]});
   s.rel=Object.assign({over:2},s.rel);
   s.rules=Object.assign({prep:'auto',share:2,order:true,semGap:4},s.rules);
   // 예전에는 전담 교사 시수 범위가 하나(예: 21~24)였음 → 교사마다 '그 범위 − 부장 감경'으로 옮김
@@ -364,7 +407,16 @@ function josa(w,a,b){const c=w.charCodeAt(w.length-1);if(c<0xAC00||c>0xD7A3)retu
 function sems(){return [0]}          // 입력 화면은 학기 구분 없이 한 줄
 function pair(a,b){return S.split&&a!==b?`${a} / ${b}`:String(a)}
 function fmt(x){return Number.isInteger(x)?String(x):x.toFixed(1)}
-function sumH(g,s,needOnly){return S.subjects.reduce((a,x)=>a+((!needOnly||x.need==='must')?(x.h[s][g]|0):0),0)}
+const BG_HI=99;                     // 보건교사: 시수 범위를 따지지 않음
+const isBG=t=>t.type==='bg';
+const KIND={jd:'전담',gs:'강사',bg:'보건교사'};
+// 보건 과목은 보건교사만 맡음 (전담 교사·강사의 과목 목록에서 뺌)
+const isHealth=s=>/보건/.test((s&&s.name)||'');
+const subjFor=t=>S.subjects.filter(s=>isBG(t)||!isHealth(s));
+const teaches=(src,sid)=>src.subj.includes(sid)&&(isBG(src)||!isHealth(S.subjects.find(s=>s.id===sid)));
+// 과목의 학기별 구분 (꼭 전담/가능하면). 학기별로 다르게를 체크한 과목만 학기마다 따로
+function needOf(x,s){return x.sem&&x.needS?x.needS[s]:x.need}
+function sumH(g,s,needOnly){return S.subjects.reduce((a,x)=>a+((!needOnly||needOf(x,s)==='must')?(x.h[s][g]|0):0),0)}
 
 let S=load()||defaultState();
 let lastShown=false;
@@ -385,36 +437,37 @@ function renderGrades(){
   $('#gradeTable').innerHTML=h;
 }
 function renderSubjects(){
-  const sp=false;
-  let h='<thead><tr><th>과목</th><th>구분</th>'+(sp?'<th>학기</th>':'')+[1,2,3,4,5,6].map(g=>`<th>${g}학년</th>`).join('')+'<th>주당 합계</th><th></th></tr></thead><tbody>';
+  let h='<thead><tr><th>과목</th><th>구분</th><th>학기</th>'+[1,2,3,4,5,6].map(g=>`<th>${g}학년</th>`).join('')+'<th>주당 합계</th><th></th></tr></thead><tbody>';
   S.subjects.forEach((s,i)=>{
-    const rs=sp?' rowspan="2"':'';
-    sems().forEach(sm=>{
+    const sp=!!s.sem,rs=sp?' rowspan="2"':'',rows=sp?[0,1]:[0];
+    rows.forEach(sm=>{
       h+=`<tr class="${sp&&sm===0?'sem1':''}">`;
-      if(sm===0)h+=`<td${rs}><input type="text" id="sn_${s.id}" data-k="sname" data-i="${i}" value="${esc(s.name)}" aria-label="과목 이름"></td>
-        <td${rs}><select id="sd_${s.id}" data-k="sneed" data-i="${i}" aria-label="${esc(s.name)} 구분"><option value="must" ${s.need==='must'?'selected':''}>꼭 전담</option><option value="want" ${s.need!=='must'?'selected':''}>가능하면</option></select></td>`;
-      if(sp)h+=`<td class="semlbl">${SEM[sm]}</td>`;
+      const nd=needOf(s,sm),sel=`<select id="sd_${s.id}${sp?'_'+sm:''}" data-k="sneed" data-i="${i}" data-s="${sp?sm:'all'}" aria-label="${esc(s.name)} ${sp?SEM[sm]+' ':''}구분"><option value="must" ${nd==='must'?'selected':''}>꼭 전담</option><option value="want" ${nd!=='must'?'selected':''}>가능하면</option></select>`;
+      const tog=isHealth(s)?`<label class="semtog" for="ss_${s.id}"><input type="checkbox" id="ss_${s.id}" data-k="ssem" data-i="${i}" ${sp?'checked':''}> 학기별로 다르게</label>`:'';
+      if(sm===0)h+=`<td${rs}><input type="text" id="sn_${s.id}" data-k="sname" data-i="${i}" value="${esc(s.name)}" aria-label="과목 이름">${tog}</td>`;
+      h+=`<td>${sel}</td>`;
+      h+=`<td class="semlbl">${sp?SEM[sm]:'1·2학기'}</td>`;
       for(let g=0;g<6;g++)h+=`<td class="hours-in"><input type="number" min="0" max="10" id="sh_${s.id}_${sm}_${g}" data-k="sh" data-i="${i}" data-s="${sp?sm:'all'}" data-g="${g}" value="${s.h[sm][g]}" aria-label="${esc(s.name)} ${g+1}학년 ${sp?SEM[sm]+' ':''}주당 시수"></td>`;
       h+=`<td class="num" id="st${i}_${sm}"></td>`;
       if(sm===0)h+=`<td${rs}><button class="del" data-act="delSubj" data-i="${i}">삭제</button></td>`;
       h+='</tr>';
     });
   });
-  if(!S.subjects.length)h+='<tr><td colspan="11" class="muted">과목이 없습니다. 과목 추가를 눌러 주세요.</td></tr>';
+  if(!S.subjects.length)h+='<tr><td colspan="12" class="muted">과목이 없습니다. 과목 추가를 눌러 주세요.</td></tr>';
   $('#subjTable').innerHTML=h+'</tbody>';
 }
 function renderTeachers(){
   let h='<thead><tr><th>이름</th><th>구분</th><th>맡을 수 있는 과목</th><th>학년</th><th>시수 범위</th><th></th></tr></thead><tbody>';
   S.teachers.forEach((t,i)=>{
     const isG=t.type==='gs';
-    const subj=S.subjects.map(s=>`<label class="chip"><input type="checkbox" id="ts_${t.id}_${s.id}" data-k="tsubj" data-i="${i}" data-sid="${s.id}" ${t.subj.includes(s.id)?'checked':''}><span>${esc(s.name||'이름 없음')}</span></label>`).join('');
+    const subj=subjFor(t).map(s=>`<label class="chip"><input type="checkbox" id="ts_${t.id}_${s.id}" data-k="tsubj" data-i="${i}" data-sid="${s.id}" ${t.subj.includes(s.id)?'checked':''}><span>${esc(s.name||'이름 없음')}</span></label>`).join('');
     const gr=[0,1,2,3,4,5].map(g=>`<label class="chip sm"><input type="checkbox" id="tg_${t.id}_${g}" data-k="tgr" data-i="${i}" data-g="${g}" ${t.gr[g]?'checked':''} aria-label="${g+1}학년"><span>${g+1}</span></label>`).join('');
     h+=`<tr>
       <td><input type="text" id="tn_${t.id}" data-k="tname" data-i="${i}" value="${esc(t.name)}" aria-label="이름"></td>
-      <td><select id="tt_${t.id}" data-k="ttype" data-i="${i}" aria-label="구분"><option value="jd" ${!isG?'selected':''}>전담 교사</option><option value="gs" ${isG?'selected':''}>강사</option></select></td>
+      <td><select id="tt_${t.id}" data-k="ttype" data-i="${i}" aria-label="구분"><option value="jd" ${t.type==='jd'?'selected':''}>전담 교사</option><option value="gs" ${isG?'selected':''}>강사</option><option value="bg" ${isBG(t)?'selected':''}>보건교사</option></select></td>
       <td><div class="chips">${subj}</div></td>
       <td><div class="chips">${gr}</div></td>
-      <td><span class="range-in"><input type="number" min="0" max="40" id="tl_${t.id}" data-k="tlo" data-i="${i}" value="${t.lo}" aria-label="최소 시수"> ~ <input type="number" min="0" max="40" id="th_${t.id}" data-k="thi" data-i="${i}" value="${t.hi}" aria-label="최대 시수"></span></td>
+      <td>${isBG(t)?'<span class="norange">범위 없음</span>':`<span class="range-in"><input type="number" min="0" max="40" id="tl_${t.id}" data-k="tlo" data-i="${i}" value="${t.lo}" aria-label="최소 시수"> ~ <input type="number" min="0" max="40" id="th_${t.id}" data-k="thi" data-i="${i}" value="${t.hi}" aria-label="최대 시수"></span>`}</td>
       <td><button class="del" data-act="delT" data-i="${i}">삭제</button></td></tr>`;
   });
   $('#teacherTable').innerHTML=h+'</tbody>';
@@ -427,7 +480,7 @@ function renderRules(){
 function renderAll(){renderGrades();renderSubjects();renderTeachers();renderRules();refreshDerived();}
 
 // 기본 담임 시수 범위: [전담 희망을 모두 줄 때, 꼭 전담만 줄 때]
-function autoHr(g){const t=S.grades[g].tot[0];return [t-sumH(g,0),t-sumH(g,0,true)]}
+function autoHr(g){const t=S.grades[g].tot[0],av=f=>half((sumH(g,0,f)+sumH(g,1,f))/2);return [t-av(),t-av(true)]}
 function refreshDerived(){
   let cls=0;
   for(let g=0;g<6;g++){
@@ -441,7 +494,7 @@ function refreshDerived(){
     cls+=G.c;
   }
   $('#gsum').textContent=cls+'학급';
-  S.subjects.forEach((s,i)=>sems().forEach(sm=>{$(`#st${i}_${sm}`).textContent=s.h[sm].reduce((a,h,g)=>a+h*S.grades[g].c,0)+'시간'}));
+  S.subjects.forEach((s,i)=>(s.sem?[0,1]:[0]).forEach(sm=>{$(`#st${i}_${sm}`).textContent=s.h[sm].reduce((a,h,g)=>a+h*S.grades[g].c,0)+'시간'}));
   renderCheck(buildProblem(S));
 }
 function renderCheck(P){
@@ -472,7 +525,8 @@ function onField(e){
     case 'gt':targets.forEach(s=>S.grades[i].tot[s]=num(el.value));break;
     case 'hlo':case 'hhi':{const G=S.grades[i];if(!G.hr)G.hr=autoHr(i);G.hr[k==='hlo'?0:1]=half(el.value);break;}
     case 'sname':S.subjects[i].name=el.value;break;
-    case 'sneed':S.subjects[i].need=el.value;break;
+    case 'sneed':{const x=S.subjects[i];if(sv==='all')x.need=el.value;else{x.needS=x.needS||[x.need,x.need];x.needS[+sv]=el.value;x.need=x.needS.includes('must')?'must':'want';}break;}
+    case 'ssem':{const x=S.subjects[i];x.sem=el.checked;if(x.sem)x.needS=[x.need,x.need];else{x.h[1]=x.h[0].slice();x.need=x.needS&&x.needS[0]||x.need;}save();renderSubjects();refreshDerived();markStale();return;}
     case 'sh':targets.forEach(s=>S.subjects[i].h[s][g]=num(el.value));break;
     case 'tname':S.teachers[i].name=el.value;break;
     case 'ttype':{const t=S.teachers[i];t.type=el.value;if(t.type==='gs')t.red=0;renderTeachers();break;}
@@ -490,7 +544,7 @@ function onField(e){
 }
 document.addEventListener('input',onField);
 document.addEventListener('change',onField);
-document.addEventListener('change',e=>{if(e.target.dataset.k==='sname')renderTeachers(),refreshDerived()});
+document.addEventListener('change',e=>{if(e.target.dataset.k!=='sname')return;const x=S.subjects[+e.target.dataset.i];if(x&&x.sem&&!isHealth(x)){x.sem=false;x.h[1]=x.h[0].slice();x.need=x.needS&&x.needS[0]||x.need;save();}renderSubjects();renderTeachers();refreshDerived();});
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const i=+b.dataset.i;
@@ -498,6 +552,7 @@ document.addEventListener('click',e=>{
     case 'addSubj':{const id=newId('s');S.subjects.push({id,name:'새 과목',need:'want',h:[[0,0,0,0,0,0],[0,0,0,0,0,0]]});S.teachers.forEach(t=>{if(t.type==='jd')t.subj.push(id)});break;}
     case 'delSubj':{const id=S.subjects[i].id;S.subjects.splice(i,1);S.teachers.forEach(t=>t.subj=t.subj.filter(x=>x!==id));break;}
     case 'addJd':{const n=S.teachers.filter(t=>t.type==='jd').length;S.teachers.push({id:newId('t'),name:'전담 '+(LETTERS[n]||n+1),type:'jd',subj:S.subjects.map(s=>s.id),gr:[1,1,1,1,1,1],red:0,lo:21,hi:24});break;}
+    case 'addBg':S.teachers.push({id:newId('t'),name:'보건교사',type:'bg',subj:S.subjects.filter(s=>/보건/.test(s.name)).map(s=>s.id),gr:[1,1,1,1,1,1],red:0,lo:0,hi:0});break;
     case 'addGs':S.teachers.push({id:newId('t'),name:'강사',type:'gs',subj:S.subjects.length?[S.subjects[0].id]:[],gr:[1,1,1,1,1,1],red:0,lo:18,hi:22});break;
     case 'delT':S.teachers.splice(i,1);break;
     case 'reset':S=defaultState();$('#results').innerHTML='';lastShown=false;break;
@@ -533,20 +588,20 @@ function buildProblem(S){
   const gk={};
   const T=S.teachers.map(t=>{
     const isG=t.type==='gs',red=0;      // 부장 감경은 없앰 (교사별 시수 범위로 대신함)
-    const lo=t.lo|0,hi=t.hi|0;           // 시수 범위는 교사마다 직접 정함
+    const bg=t.type==='bg',lo=bg?0:t.lo|0,hi=bg?BG_HI:t.hi|0;   // 시수 범위는 교사마다 직접 정함 (보건교사는 범위 없음)
     return {name:t.name.trim()||'이름 없음',type:t.type,lo,hi,red,src:t};
   });
   S.subjects.forEach(s=>{for(let g=0;g<6;g++){
     const c=S.grades[g].c|0,h0=s.h[0][g]|0,h1=sp?(s.h[1][g]|0):h0,hm=Math.max(h0,h1);
     if(!(c>0&&hm>0))continue;
-    const name=s.name.trim()||'이름 없는 과목',must=s.need==='must';
-    const anyone=T.some(t=>t.src.subj.includes(s.id)&&!!t.src.gr[g]);
+    const name=s.name.trim()||'이름 없는 과목',m0=needOf(s,0)==='must'&&h0>0,m1=needOf(s,sp?1:0)==='must'&&h1>0,must=m0||m1;
+    const anyone=T.some(t=>teaches(t.src,s.id)&&!!t.src.gr[g]);
     // 전담에게 줄 반당 시간 후보: [1학기, 2학기]. 가능하면 과목은 학기마다 따로 0시간~전부
     let xs=[];
-    if(must)xs.push([h0,h1]);
+    if(m0&&m1)xs.push([h0,h1]);
     // 학기마다 전담 시간을 따로 고름 (예: 3·2시간, 2·1시간). 교사·담임의 학기 간 차이는 4단계 입력값까지로 막음
-    else for(let a=h0;a>=0;a--)for(let b=h1;b>=0;b--){
-      if((!sp||sameSem)&&a!==b)continue;
+    else for(let a=h0;a>=(m0?h0:0);a--)for(let b=h1;b>=(m1?h1:0);b--){
+      if((!sp||(sameSem&&h0===h1))&&a!==b)continue;
       if(h0>0&&h1>0&&((a===0)!==(b===0)))continue;   // 한 학기만 전담(다른 학기는 담임)은 절대 안 됨
       xs.push([a,b]);
     }
@@ -559,7 +614,7 @@ function buildProblem(S){
     chunks.push({sid:s.id,sname:name,g,c,h:[h0,h1],hsum:h0+h1,must,opts,total:c*(h0+h1)});
   }});
   chunks.sort((a,b)=>b.total-a.total||a.g-b.g);
-  T.forEach(t=>{t.elig=chunks.map(ch=>ch.opts[0].sum>0&&t.src.subj.includes(ch.sid)&&!!t.src.gr[ch.g])});
+  T.forEach(t=>{t.elig=chunks.map(ch=>ch.opts[0].sum>0&&teaches(t.src,ch.sid)&&!!t.src.gr[ch.g])});
 
   // 한 사람이 가질 수 있는 시수 범위 (A에 따라 달라짐). 같은 A면 정수 범위.
   function bounds(t,d,A){
@@ -597,6 +652,7 @@ function buildProblem(S){
     t.dlo=dims.map((w,d)=>{if(!band[d])return t.lo*w;return Math.min(...[band[d].jmin,band[d].jmax].map(J=>bounds(t,d,(TA[d]-J)/N)[0]))});
     t.dhi=dims.map((w,d)=>{if(!band[d])return t.hi*w;return Math.max(...[band[d].jmin,band[d].jmax].map(J=>bounds(t,d,(TA[d]-J)/N)[1]))});
     t.dtg=dims.map(w=>(t.lo+t.hi)/2*w);   // 목표: 자기 시수 범위의 가운데
+    t.free=t.type==='bg';                 // 보건교사: 범위·학기 차이·시수 고르게를 따지지 않음
     const key=[t.type,t.lo,t.hi,t.red,t.elig.map(Number).join('')].join('|');
     if(!(key in gk))gk[key]=Object.keys(gk).length;
     t.group=gk[key];
@@ -696,7 +752,7 @@ function runDFS(P,L,share,opt,pool){
   }
   function delta(t,k,dp,ch){
     let d=0;
-    for(let x=0;x<D;x++){const tg=T[t].dtg[x],a=k*dp[x];d+=(Math.abs(H[t][x]+a-tg)-Math.abs(H[t][x]-tg))/W[x];}
+    if(!T[t].free)for(let x=0;x<D;x++){const tg=T[t].dtg[x],a=k*dp[x];d+=(Math.abs(H[t][x]+a-tg)-Math.abs(H[t][x]-tg))/W[x];}
     d/=D;
     if(U[t]>0){const ss=subjCnt[t][ch.sid]>0,gg=grCnt[t][ch.g]>0;if(ss)d-=1.5;if(gg)d-=1;if(!ss&&!gg)d+=1;}
     return d+(noise?rng()*noise:0);
@@ -734,7 +790,7 @@ function runDFS(P,L,share,opt,pool){
   }
   // 끝까지 왔을 때: 실제 담임 평균으로 모든 사람의 조건을 정확히 확인
   function exact(){
-    for(let t=0;t<m;t++)if(Math.abs(HS[t][0]-HS[t][1])>P.semGap)return false;
+    for(let t=0;t<m;t++)if(!T[t].free&&Math.abs(HS[t][0]-HS[t][1])>P.semGap)return false;
     const hr=[0,1].map(s=>S.grades.map(g=>g.tot[P.split?s:0]|0));
     for(let i=0;i<n;i++){hr[0][C[i].g]-=asg[i].op.x[0];hr[1][C[i].g]-=asg[i].op.x[1];}
     for(let g=0;g<6;g++){
@@ -796,11 +852,11 @@ function makePlan(P,asg){
     q.U=q.items.length;
     q.nS=new Set(q.items.map(x=>C[x.i].sid)).size;
     q.nG=new Set(q.items.map(x=>C[x.i].g)).size;
-    for(let d=0;d<D;d++){const w=P.W[d],tg=(tt.lo+tt.hi)/2*w;dev+=((q.Hd[d]-tg)/w)**2/D;}
+    if(!tt.free)for(let d=0;d<D;d++){const w=P.W[d],tg=(tt.lo+tt.hi)/2*w;dev+=((q.Hd[d]-tg)/w)**2/D;}
     prep+=q.U*q.U;
     extra+=Math.max(0,q.nS-2)+Math.max(0,q.nG-2);
     maxU=Math.max(maxU,q.U);
-    ss.forEach(s=>{
+    if(!tt.free)ss.forEach(s=>{
       hiA[s]=Math.max(hiA[s],q.H[s]);loA[s]=Math.min(loA[s],q.H[s]);
       if(tt.type==='jd'){const eq=q.H[s];hiJ[s]=Math.max(hiJ[s],eq);loJ[s]=Math.min(loJ[s],eq);}
     });
@@ -1099,9 +1155,10 @@ function renderResults(P,r,sec){
   const prepText=r.auto
     ?`준비 수업은 1인당 과목·학년 조합 ${Math.max(L+1,4)}개까지 허용해 비교했습니다(찾은 안 중 가장 낮은 값은 ${L}개).`
     :`준비 부담 한도는 1인당 과목·학년 조합 ${L}개입니다.`;
-  const semText=S.rules.sem==='avg'?' 맡는 반은 1년 내내 같고, 시수는 두 학기 평균으로 맞췄습니다.':' 맡는 반은 1년 내내 같고, 1·2학기 시수가 같습니다.';
+  const semText=S.rules.sem==='avg'?' 맡는 반은 1년 내내 같고, 시수는 두 학기 평균으로 맞췄습니다.':(S.subjects.some(x=>x.sem)?' 맡는 반은 1년 내내 같고, 학기별 과목을 뺀 과목은 1·2학기 시수가 같습니다.':' 맡는 반은 1년 내내 같고, 1·2학기 시수가 같습니다.');
   const first=Math.min(5,r.picked.length),more=r.picked.length-first;
   let h=`<div class="res-head"><div class="res-title"><h2>배정안 ${first}가지${more?` <span class="muted" style="font-size:14px;font-weight:500">아래 더보기로 ${r.picked.length}가지까지</span>`:''}</h2>${semNote()}</div>
+    ${S.subjects.some(x=>x.sem)?`<p><b>학기별 과목:</b> ${S.subjects.filter(x=>x.sem).map(x=>esc(x.name)).join(', ')}. 한 학기에만 있는 과목은 그 학기만 맡습니다. 교사·담임의 1·2학기 시수 차이는 ${S.rules.semGap}시간까지로 맞췄습니다${S.teachers.some(isBG)?' (보건교사는 제외)':''}.</p>`:''}
     <p><b>안을 고르는 순서:</b> ① 학년 간 담임 시수 차이 작게 ② 같은 학년군 담임 시수 같게 ③ 전담 준비 수업 수 적게 ④ 전담끼리 시수 고르게 ⑤ 학년별 담임 시수 평균에 가깝게 ⑥ 나눠 맡는 곳 적게 ⑦ 전담 시수 범위 가운데에 가깝게 ⑧ 한 사람이 5개 이상 과목·학년으로 퍼지지 않게 ⑨ 희망 많이 들어주기 ⑩ 담임과 같은 학기에 나눠 맡는 곳 적게. 한 학기만 전담이 맡고 다른 학기는 담임이 맡는 배분은 아예 제외했습니다.</p>
     <p>모든 안에서 교사마다 정한 시수 범위를 지킵니다.${P.order?' 담임 시수는 6학년 ≤ 5학년 ≤ 4학년 ≤ 3학년 ≤ 1학년 = 2학년을 지킵니다.':''} ${prepText}${semText} 서로 다른 배정 ${r.count.toLocaleString()}가지를 찾았고(${sec.toFixed(1)}초${r.stopped?', 도중에 멈춤':''}), 그중 점수가 좋으면서 서로 많이 다른 안을 골랐습니다.</p></div>`;
   const labels=labelsFor(r.picked);
@@ -1122,7 +1179,7 @@ function planHTML(P,p,idx,labels){
   const s1=sp?1:0;
   const rangeTxt=sp?`1학기 <b>${p.loA[0]}~${p.hiA[0]}</b> · 2학기 <b>${p.loA[1]}~${p.hiA[1]}</b>시간`:`<b>${p.loA[0]}~${p.hiA[0]}</b>시간`;
   const gave=sp&&p.J[0]!==p.J[1]?`${p.J[0]} / ${p.J[1]}`:p.J[0],wantT=sp&&p.want[0]!==p.want[1]?`${p.want[0]} / ${p.want[1]}`:p.want[0];
-  let h=`<article class="plan pickable" data-plan="${idx}" title="눌러서 이 안을 선택하고 미세 조정"><div class="plan-top"><span class="plan-no">${idx+1}안</span>${labels.map(l=>`<span class="tag">${l}</span>`).join('')}<button class="btn edit-btn" data-act="edOpen" data-i="${idx}">선택 및 미세 조정</button></div>
+  let h=`<article class="plan pickable" data-plan="${idx}" title="눌러서 이 안을 선택하고 미세 조정"><div class="plan-top"><span class="plan-no">${idx+1}안</span>${labels.map(l=>`<span class="tag">${l}</span>`).join('')}<span class="edit-wrap"><button class="btn edit-btn" data-act="edOpen" data-i="${idx}">선택 및 미세 조정</button><span class="edit-tip" role="note">학기별 조정을 할 수 있습니다.</span></span></div>
     <div class="stats"><span>담임 <b>${hrSummary(p)}</b></span><span>담임 평균 <b>${pair(p.hrAvg[0].toFixed(1),p.hrAvg[s1].toFixed(1))}</b>시간 (학년 간 차이 최대 <b>${mixed(p.hrSpread)}</b>시간${P.semAvg?', 연 평균':''})</span><span>같은 학년군 담임 시수 차이 <b>${mixed(p.pairDiff)}</b>시간</span><span>전담·강사 시수 ${rangeTxt}</span><span>희망 <b>${wantT}</b>시간 중 <b>${gave}</b>시간을 전담이 맡음</span><span>준비 수업 1인 최대 <b>${p.maxU}</b>개 · 합계 <b>${p.prepSum}</b>개</span>${p.handover?`<span style="color:var(--bad)">학기 중 교사가 바뀌는 학년·과목 <b>${p.handover}</b>곳</span>`:''}<span>나눠 맡는 곳 <b>${p.splits}</b>곳</span></div>`;
   // 교사별
   h+=`<h3>교사별로 보기</h3><div class="tbl"><table><thead><tr><th>교사</th><th>맡는 수업</th><th>주당 시수 (연평균)</th><th>준비</th></tr></thead><tbody>`;
@@ -1130,9 +1187,9 @@ function planHTML(P,p,idx,labels){
     const tt=T[t];
     const items=q.items.slice().sort((a,b)=>C[a.i].g-C[b.i].g||C[a.i].sname.localeCompare(C[b.i].sname)).map(x=>{
       const ch=C[x.i],ox=x.op.x;
-      return `<span class="cls"${semTitle(ox)}>${ch.g+1}학년 ${esc(ch.sname)} ${x.k===ch.c?'전체 ':''}${x.k}학급 <span class="h">주 ${mixed(x.k*x.op.sum/2)}h</span>${perClass(ch,x.op)}</span>`}).join('');
-    const rel=tt.type==='gs'?`(범위 ${tt.lo}~${tt.hi})`:'';
-    h+=`<tr><td class="who">${esc(tt.name)}<span class="kind">${tt.type==='gs'?'강사':'전담'}</span></td>
+      return `<span class="cls"${semTitle(ox)}>${ch.g+1}학년 ${esc(ch.sname)} ${x.k===ch.c?'전체 ':''}${x.k}학급 <span class="h">주 ${mixed(x.k*x.op.sum/2)}h${ox[0]!==ox[1]?` (${x.k*ox[0]}·${x.k*ox[1]})`:''}</span>${perClass(ch,x.op)}</span>`}).join('');
+    const rel=tt.type==='gs'?`(범위 ${tt.lo}~${tt.hi})`:tt.free?'(범위 없음)':'';
+    h+=`<tr><td class="who">${esc(tt.name)}<span class="kind${tt.free?' bg':''}">${KIND[tt.type]||'전담'}</span></td>
       <td><div class="cls-list">${items||'<span class="muted">없음</span>'}</div></td>
       <td class="num"><b>${mixed((q.H[0]+q.H[s1])/2)}</b>${sp?` <span class="muted">(1학기 ${q.H[0]} · 2학기 ${q.H[s1]})</span>`:''} <span class="muted">${rel}</span></td>
       <td class="num">${q.U}개 <span class="muted">(${q.nS}과목·${q.nG}개 학년)</span></td></tr>`;
@@ -1172,6 +1229,8 @@ function mixed(v){
 // 반당 전담 시간: 희망보다 적게 줬거나 학기마다 다를 때만 표시
 function perClass(ch,op){
   const partial=op.sum<ch.hsum,diff=op.x[0]!==op.x[1];
+  const only=ch.h[0]>0&&ch.h[1]===0?1:ch.h[1]>0&&ch.h[0]===0?2:0;
+  if(only)return ` <span class="cut">${only}학기만 주 ${Math.max(op.x[0],op.x[1])}시간</span>`;
   if(!partial&&!diff)return '';
   return ` <span class="cut">반당 주 ${mixed(op.sum/2)}시간</span>`;
 }
@@ -1198,7 +1257,7 @@ const hOf=(sid,g,s)=>subjOf(sid).h[s][g]|0;
 /* ---- 말이 안 되는 조정을 막는 도우미 ---- */
 // 그 교사가 그 학년·과목을 맡을 수 있는지 (교사 표에서 체크한 과목·학년)
 const teacherSrc=t=>(lastRes&&lastRes.P.T[t]&&lastRes.P.T[t].src)||{};
-const canTeach=(t,g,sid)=>{const s=teacherSrc(t);return (!s.subj||s.subj.includes(sid))&&(!s.gr||!!s.gr[g])&&(hOf(sid,g,0)+hOf(sid,g,1)>0)&&(S.grades[g].c|0)>0};
+const canTeach=(t,g,sid)=>{const s=teacherSrc(t);return (!s.subj||teaches(s,sid))&&(!s.gr||!!s.gr[g])&&(hOf(sid,g,0)+hOf(sid,g,1)>0)&&(S.grades[g].c|0)>0};
 // 같은 학년·과목에서 아직 아무도 안 맡은 반 수 (except 줄은 빼고 셈)
 const availK=(g,sid,except)=>(S.grades[g].c|0)-ED.items.reduce((a,x)=>a+(x!==except&&x.g===g&&x.sid===sid?x.k:0),0);
 // 반당 시간: 그 학기에 과목 시간이 있으면 1 ~ 과목 시수, 없으면 0 (한 학기만 전담 방지)
@@ -1236,6 +1295,7 @@ function edCalc(){
   const hr=[0,1].map(s=>S.grades.map((G,g)=>{if(!(G.c>0))return null;let r=0;ED.items.forEach(it=>{if(it.g===g)r+=it.k*it.x[s]});return G.tot[s]-r/G.c;}));
   T.forEach((t,i)=>{
     const q=per[i],av=(q.H[0]+q.H[1])/2;
+    if(t.free)return;
     if(av<t.lo||av>t.hi)warn.push(`${t.name}: 연평균 ${mixed(av)}시간이 시수 범위(${t.lo}~${t.hi}) 밖입니다.`);
     if(Math.abs(q.H[0]-q.H[1])>(S.rules.semGap|0))warn.push(`${t.name}: 1학기 ${q.H[0]}시간, 2학기 ${q.H[1]}시간으로 차이가 ${S.rules.semGap}시간보다 큽니다.`);
   });
@@ -1243,7 +1303,7 @@ function edCalc(){
     const G=S.grades[it.g],nm=`${it.g+1}학년 ${subjOf(it.sid).name}`;
     if(!(G.c>0))hard.push(`${nm}: ${it.g+1}학년에 학급이 없습니다.`);
     [0,1].forEach(s=>{const h=hOf(it.sid,it.g,s);if(it.x[s]>h)hard.push(`${nm}: ${s+1}학기 반당 ${it.x[s]}시간이 과목 시수(${h}시간)보다 많습니다.`)});
-    if(it.k>0&&((it.x[0]===0)!==(it.x[1]===0)))hard.push(`${nm} (${T[it.t].name}): 한 학기만 전담이 맡아, 한 학급을 1년 내내 같은 교사가 맡지 않습니다.`);
+    if(it.k>0&&hOf(it.sid,it.g,0)>0&&hOf(it.sid,it.g,1)>0&&((it.x[0]===0)!==(it.x[1]===0)))hard.push(`${nm} (${T[it.t].name}): 한 학기만 전담이 맡아, 한 학급을 1년 내내 같은 교사가 맡지 않습니다.`);
     if(G.c>0&&!canTeach(it.t,it.g,it.sid))hard.push(`${nm}: ${T[it.t].name} 선생님은 교사 표에서 이 학년·과목을 맡을 수 있게 되어 있지 않습니다.`);
   });
   Object.entries(cell).forEach(([key,c])=>{const [g,sid]=key.split(':');const G=S.grades[+g];if(G.c>0&&c.k>G.c)hard.push(`${+g+1}학년 ${subjOf(sid).name}: ${c.k}반을 배정해 학급 수(${G.c}반)를 넘습니다.`)});
@@ -1262,7 +1322,7 @@ function semH(x){return x[0]===x[1]?`${x[0]}h`:`1학기 ${x[0]}·2학기 ${x[1]}
 function fmt1(v){return Math.abs(v*2-Math.round(v*2))<1e-9?mixed(v):v.toFixed(1)}
 function renderEditor(){
   const c=edCalc(),T=c.T,changed=JSON.stringify(ED.items)!==ED.orig;
-  let h=`<div class="ed-bar"><button class="btn" data-act="edBack">← 배정안 목록으로</button>
+  let h=`<div class="ed-bar"><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="edBack">← 배정안 목록으로</button><button class="btn tour-btn" data-act="edTour">사용법 보기</button></span>
     <div class="ed-actions">
       <button class="btn ico-btn" data-act="edPrint" title="A4 가로로 인쇄합니다. 인쇄 창에서 'PDF로 저장'을 고르면 PDF 파일이 됩니다."><span class="fico pdf" aria-hidden="true">PDF</span>인쇄 / PDF</button>
       <button class="btn ico-btn" data-act="edXlsx" title="교사별, 학년별 편성표, 요약 시트가 든 엑셀 파일을 내려받습니다."><span class="fico xls" aria-hidden="true">X</span>엑셀로 내보내기</button>
@@ -1282,7 +1342,7 @@ function renderEditor(){
   const xIn=(it,s)=>{const h=hOf(it.sid,it.g,s);return h>0?`<input type="number" min="1" max="${h}" data-ed="x${s}" data-id="${it.id}" id="edx${s}_${it.id}" value="${it.x[s]}" aria-label="${s+1}학기 반당 시간 (1~${h})"> <span class="muted">/ ${h}</span>`:`<span class="muted">없음</span>`};
   const col=edGroups();
   T.forEach((t,ti)=>{
-    h+=`<tr class="ed-t"><th colspan="8"><div class="ed-thead"><span class="who">${esc(t.name)}<span class="kind">${t.type==='gs'?'강사':'전담'}</span></span><span class="stat" id="edT${ti}"></span><button class="btn" data-act="edAdd" data-t="${ti}">+ 수업 추가</button></div></th></tr>`;
+    h+=`<tr class="ed-t"><th colspan="8"><div class="ed-thead"><span class="who">${esc(t.name)}<span class="kind${t.free?' bg':''}">${KIND[t.type]||'전담'}</span></span><span class="stat" id="edT${ti}"></span><button class="btn" data-act="edAdd" data-t="${ti}">+ 수업 추가</button></div></th></tr>`;
     const mine=ED.items.filter(it=>it.t===ti).sort((a,b)=>a.g-b.g||subjOf(a.sid).name.localeCompare(subjOf(b.sid).name));
     if(!mine.length)h+=`<tr><td colspan="8" class="muted">맡은 수업이 없습니다.</td></tr>`;
     mine.forEach(it=>{
@@ -1309,9 +1369,9 @@ function renderEdDerived(c){
   c=c||edCalc();const T=c.T;
   // 교사 머리줄
   T.forEach((t,ti)=>{
-    const q=c.per[ti],av=(q.H[0]+q.H[1])/2,out=av<t.lo||av>t.hi,gap=Math.abs(q.H[0]-q.H[1])>(S.rules.semGap|0);
+    const q=c.per[ti],av=(q.H[0]+q.H[1])/2,out=!t.free&&(av<t.lo||av>t.hi),gap=!t.free&&Math.abs(q.H[0]-q.H[1])>(S.rules.semGap|0);
     const el=$('#edT'+ti);if(!el)return;
-    el.innerHTML=`연평균 <b style="font-size:15px">${mixed(av)}</b>시간 · 1학기 <b>${q.H[0]}</b> · 2학기 <b>${q.H[1]}</b> (범위 ${t.lo}~${t.hi})${out?'<span class="chip-bad">범위 밖</span>':''}${gap?'<span class="chip-bad">학기 차이 큼</span>':''} · 준비 수업 <b>${q.units.size}</b>개 (${q.subs.size}과목·${q.grs.size}개 학년)`;
+    el.innerHTML=`연평균 <b style="font-size:15px">${mixed(av)}</b>시간 · 1학기 <b>${q.H[0]}</b> · 2학기 <b>${q.H[1]}</b> ${t.free?'(범위 없음)':`(범위 ${t.lo}~${t.hi})`}${out?'<span class="chip-bad">범위 밖</span>':''}${gap?'<span class="chip-bad">학기 차이 큼</span>':''} · 준비 수업 <b>${q.units.size}</b>개 (${q.subs.size}과목·${q.grs.size}개 학년)`;
   });
   // 수업 조각별 주당 시수, 과목 시수보다 많으면 빨갛게
   ED.items.forEach(it=>{
@@ -1408,7 +1468,7 @@ function edExport(){
     const q=c.per[ti];
     const rows=ED.items.filter(it=>it.t===ti&&it.k>0).sort((a,b)=>a.g-b.g||subjOf(a.sid).name.localeCompare(subjOf(b.sid).name))
       .map(it=>({g:`${it.g+1}학년`,s:subjOf(it.sid).name,k:it.k,x:it.x.slice(),w:[it.k*it.x[0],it.k*it.x[1]]}));
-    return {name:t.name,kind:t.type==='gs'?'강사':'전담',rows,H:q.H.slice(),avg:(q.H[0]+q.H[1])/2,range:`${t.lo}~${t.hi}`,units:q.units.size};
+    return {name:t.name,kind:KIND[t.type]||'전담',rows,H:q.H.slice(),avg:(q.H[0]+q.H[1])/2,range:t.free?'없음':`${t.lo}~${t.hi}`,units:q.units.size};
   });
   // 학년별 편성표
   const subs=S.subjects.filter(s=>s.h[0].some(v=>v>0)||s.h[1].some(v=>v>0)||ED.items.some(it=>it.sid===s.id));
@@ -1577,6 +1637,120 @@ document.addEventListener('click',e=>{
   const card=e.target.closest('.plan.pickable');
   if(card&&!window.getSelection().toString())openEditor(+card.dataset.plan);
 });
+
+
+/* ================= 미세 조정 사용법: 화면의 실제 칸을 하나씩 짚어 주는 안내 =================
+   처음 미세 조정을 열 때 한 번 저절로 뜨고, 그 뒤로는 '사용법 보기'로 다시 볼 수 있음.
+   '직접 해 보기' 단계는 그 칸을 실제로 바꾸면 완료 표시가 됨 (안 해도 '다음'으로 넘어갈 수 있음) */
+const TOUR_KEY='jeondam-tour-seen-v1';
+const firstOf=sel=>[...document.querySelectorAll('#editor '+sel)].find(el=>el.offsetParent!==null)||null;
+const TOUR=[
+  {t:'미세 조정 화면입니다',sel:'.ed-title',
+   b:'계산기가 찾은 안을 학교 사정에 맞게 직접 고치는 곳입니다. 마음껏 바꿔 보셔도 됩니다. 위의 <b>조정 취소</b>를 누르면 언제든 처음 안으로 돌아갑니다.'},
+  {t:'먼저 판정을 보세요',sel:'#edWarn',
+   b:'고칠 때마다 여기 판정이 바로 바뀝니다.<br><b style="color:var(--ok)">초록</b>: 그대로 쓸 수 있음<br><b style="color:var(--bad)">빨강</b>: 실제로 운영할 수 없음, 꼭 고쳐야 함<br><b>노란 목록</b>: 시수 범위·담임 시수 순서처럼 학교 기준과 다른 곳. 사정상 괜찮으면 그대로 두어도 됩니다.'},
+  {t:'선생님마다 한 묶음입니다',sel:'.ed-t',
+   b:'굵은 줄이 선생님 이름이고, 그 아래 줄들이 그 선생님이 맡는 수업입니다. 오른쪽에 <b>연평균 시수</b>와 1·2학기 시수가 보이고, 범위를 벗어나면 <b>범위 밖</b> 표시가 붙습니다.'},
+  {t:'① 담당 선생님 바꾸기',sel:'select[data-ed="t"]',ev:{type:'change',m:'select[data-ed="t"]'},
+   b:'이 수업을 다른 선생님에게 넘길 때 씁니다. 그 과목·학년을 맡을 수 있는 선생님만 목록에 나옵니다.',
+   try:'목록에서 다른 선생님을 골라 보세요. 이 줄이 그 선생님 묶음으로 옮겨 갑니다.'},
+  {t:'② 학급 수 줄여서 나눠 맡기',sel:'input[data-ed="k"]',ev:{type:'change',m:'input[data-ed="k"]'},pick:el=>+el.value>=2,
+   b:'예를 들어 5반을 3반으로 줄이면 남은 <b>2반이 바로 아래 새 줄</b>로 생깁니다. 새 줄의 담당 선생님을 바꾸면 두 사람이 나눠 맡게 됩니다. 새 줄을 삭제하면 그 반은 담임이 맡습니다.',
+   try:'숫자를 하나 줄여 보세요. 바로 아래에 새 줄이 생깁니다.'},
+  {t:'③ 반당 시간 바꾸기',sel:'input[data-ed="x0"]',ev:{type:'input',m:'input[data-ed^="x"]'},
+   b:'한 반에 일주일에 몇 시간을 전담이 맡을지입니다. 1학기·2학기를 따로 정합니다. 오른쪽 <b>/ 3</b>은 과목 시수로, 그보다 많이 줄 수는 없습니다. 줄인 만큼은 담임이 맡습니다.<br>왼쪽에 <b>같은 색 점</b>이 붙은 줄들은 같은 학년·과목을 나눠 맡는 줄이라 함께 바뀝니다.'},
+  {t:'④ 전담에서 빼기 (담임에게 돌려주기)',sel:'.ed .del',
+   b:'<b>삭제</b>를 누르면 그 줄의 반들은 담임이 맡게 됩니다. 수업이 없어지는 게 아니라 담임 시수로 돌아갑니다.'},
+  {t:'⑤ 수업 더 맡기기',sel:'[data-act="edAdd"]',
+   b:'<b>+ 수업 추가</b>를 누르면 그 선생님이 맡을 수 있으면서 아직 담임이 맡고 있는 반이 1반 추가됩니다. 추가된 줄에서 학년·과목·학급 수를 고르면 됩니다.'},
+  {t:'결과는 학년별 편성표에서',sel:'#edGrid',
+   b:'위에서 고친 내용이 바로 반영됩니다. 칸마다 누가 몇 반을 반당 몇 시간 맡는지, 남은 반은 <b>담임</b>으로 보입니다. 오른쪽 끝에서 학년별 담임 시수를 확인하세요.'},
+  {t:'다 고쳤으면 내보내기',sel:'.ed-actions',
+   b:'<b>인쇄/PDF</b>, <b>엑셀</b>, 한글에 붙여 넣는 <b>표 복사</b>가 있습니다. 바꾼 내용을 모두 취소하려면 <b>조정 취소</b>를 누르세요.<br>이 안내는 위의 <b>사용법 보기</b>로 언제든 다시 볼 수 있습니다.'}
+];
+let TS=null;   // {i, done:Set}
+function tourTarget(st){
+  const all=[...document.querySelectorAll('#editor '+st.sel)].filter(el=>el.offsetParent!==null);
+  return (st.pick?all.find(st.pick):null)||all[0]||null;
+}
+function tourDraw(scroll){
+  if(!TS)return;
+  const st=TOUR[TS.i],el=tourTarget(st);
+  let spot=$('#tourSpot'),tip=$('#tourTip');
+  if(!spot){spot=document.createElement('div');spot.id='tourSpot';spot.className='tour-spot';document.body.appendChild(spot);}
+  if(!tip){tip=document.createElement('div');tip.id='tourTip';tip.className='tour-tip';tip.setAttribute('role','dialog');tip.setAttribute('aria-live','polite');document.body.appendChild(tip);}
+  if(el&&scroll){el.scrollIntoView({block:'center',behavior:'instant'});}
+  const done=TS.done.has(TS.i),last=TS.i===TOUR.length-1;
+  tip.innerHTML=`<div class="tstep">${TS.i+1} / ${TOUR.length}</div><h4>${st.t}</h4><p>${st.b}</p>${st.try?`<p class="try${done?' done':''}">${done?'잘하셨습니다! 다음으로 넘어가세요.':'직접 해 보기: '+st.try}</p>`:''}
+    <div class="tbtns">${TS.i?'<button class="skip" data-tour="end">안내 닫기</button><button class="btn" data-tour="prev">이전</button>':'<button class="btn" data-tour="end" style="margin-right:auto">건너뛰기</button>'}<button class="btn go" data-tour="${last?'end':'next'}">${last?'마치기':'다음'}</button></div>`;
+  tourPlace();
+}
+function tourPlace(){
+  if(!TS)return;
+  const spot=$('#tourSpot'),tip=$('#tourTip');if(!spot||!tip)return;
+  const el=tourTarget(TOUR[TS.i]),vw=innerWidth,vh=innerHeight,pad=6;
+  if(!el){spot.className='tour-spot none';spot.style.cssText=`left:${vw/2}px;top:${vh/2}px`;tip.style.left=Math.max(16,(vw-tip.offsetWidth)/2)+'px';tip.style.top=Math.max(16,(vh-tip.offsetHeight)/2)+'px';return;}
+  const r=el.getBoundingClientRect();
+  // 너무 큰 칸(편성표 등)은 화면 안쪽만 비춤
+  const top=Math.max(8,r.top-pad),bottom=Math.min(vh-8,r.bottom+pad),left=Math.max(8,r.left-pad),right=Math.min(vw-8,r.right+pad);
+  spot.className='tour-spot';
+  spot.style.cssText=`left:${left}px;top:${top}px;width:${Math.max(0,right-left)}px;height:${Math.max(0,bottom-top)}px`;
+  const th=tip.offsetHeight,tw=tip.offsetWidth;
+  let y=bottom+12;
+  if(y+th>vh-12)y=top-th-12;               // 아래 자리가 없으면 위로
+  if(y<12)y=Math.max(12,vh-th-12);          // 위에도 없으면 화면 아래에
+  const x=Math.min(Math.max(16,left),vw-tw-16);
+  tip.style.left=x+'px';tip.style.top=y+'px';
+}
+function tourStart(){TS={i:0,done:new Set()};tourDraw(true);try{localStorage.setItem(TOUR_KEY,'1')}catch(e){}}
+/* 들어올 때 안내: '사용법 보기' 버튼만 비추고 반짝임. 버튼을 누르면 1/10부터, 다른 곳을 누르면 닫힘 */
+let TI=false;
+function introDraw(){
+  if(!TI)return;
+  const b=document.querySelector('#editor [data-act="edTour"]');if(!b){introEnd();return;}
+  b.classList.add('pulse');
+  let spot=$('#tourSpot'),tip=$('#tourTip');
+  if(!spot){spot=document.createElement('div');spot.id='tourSpot';document.body.appendChild(spot);}
+  if(!tip){tip=document.createElement('div');tip.id='tourTip';tip.setAttribute('role','note');document.body.appendChild(tip);}
+  spot.className='tour-spot soft';tip.className='tour-tip intro';
+  tip.innerHTML='<p>처음이라면 <b>사용법 보기</b>를 먼저 눌러 보세요.</p><button class="later" data-tour="intro-off">괜찮아요, 바로 고칠게요</button>';
+  const r=b.getBoundingClientRect(),pad=4;
+  spot.style.cssText=`left:${r.left-pad}px;top:${r.top-pad}px;width:${r.width+pad*2}px;height:${r.height+pad*2}px`;
+  tip.style.left=Math.min(Math.max(16,r.left),innerWidth-tip.offsetWidth-16)+'px';tip.style.top=(r.bottom+12)+'px';
+}
+// 처음 한 번만: 띄우는 순간 본 것으로 저장 (눌렀든 닫았든 다음부터는 안 뛸)
+function introStart(){TI=true;try{localStorage.setItem(TOUR_KEY,'1')}catch(e){}introDraw();}
+function introEnd(){
+  if(!TI)return;TI=false;
+  const b=document.querySelector('[data-act="edTour"]');if(b)b.classList.remove('pulse');
+  if(!TS)['#tourSpot','#tourTip'].forEach(s=>{const e=$(s);if(e)e.remove()});
+}
+// 안내가 떠 있을 때 다른 곳을 누르면 닫음 (누른 동작은 그대로 실행)
+document.addEventListener('click',e=>{if(TI&&!e.target.closest('[data-act="edTour"]'))introEnd();},true);
+function tourEnd(){TS=null;['#tourSpot','#tourTip'].forEach(s=>{const e=$(s);if(e)e.remove()});}
+function tourGo(d){if(!TS)return;TS.i=Math.min(TOUR.length-1,Math.max(0,TS.i+d));tourDraw(true);}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-tour]');
+  if(t){const a=t.dataset.tour;if(a==='next')tourGo(1);else if(a==='prev')tourGo(-1);else tourEnd();return;}
+  if(e.target.closest('[data-act="edTour"]')){introEnd();['#tourSpot','#tourTip'].forEach(s=>{const x=$(s);if(x)x.remove()});tourStart();return;}
+  if(e.target.closest('[data-act="edBack"]'))tourEnd();
+});
+// 직접 해 보기: 그 단계의 칸을 실제로 바꾸면 완료
+['input','change'].forEach(type=>document.addEventListener(type,e=>{
+  if(!TS)return;const st=TOUR[TS.i];
+  if(st.ev&&st.ev.type===type&&e.target.matches&&e.target.matches(st.ev.m)){TS.done.add(TS.i);setTimeout(()=>tourDraw(false),0);}
+},true));
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(TI)introEnd();if(TS)tourEnd();});
+addEventListener('scroll',()=>{tourPlace();introDraw();},{passive:true});
+addEventListener('resize',()=>{tourPlace();introDraw();});
+// 화면을 다시 그린 뒤에도 같은 칸을 비추도록
+const _renderEditor=renderEditor;renderEditor=function(){_renderEditor.apply(this,arguments);if(TS)setTimeout(()=>tourDraw(false),0);if(TI)introDraw();};
+const _openEditor=openEditor;openEditor=function(){
+  _openEditor.apply(this,arguments);
+  let seen=false;try{seen=!!localStorage.getItem(TOUR_KEY)}catch(e){}
+  if(!seen&&ED)setTimeout(introStart,250);
+};
+const _closeEditor=closeEditor;closeEditor=function(){introEnd();tourEnd();_closeEditor.apply(this,arguments);};
 
 renderAll();
 </script>
